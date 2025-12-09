@@ -1,4 +1,4 @@
-package com.example.app_antam
+package com.example.antam_app
 
 import io.flutter.embedding.android.FlutterActivity
 

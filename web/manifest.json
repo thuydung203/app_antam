@@ -1,6 +1,6 @@
 {
-    "name": "app_antam",
-    "short_name": "app_antam",
+    "name": "antam_app",
+    "short_name": "antam_app",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
