@@ -10,22 +10,12 @@ class LoadingPage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
-              width: 500,   // chỉnh số này để ảnh TO lên
+              width: 500,
               child: Image.asset(
-                "assets/images/logo_removeBG.png",
+                "assets/images/logo.png",
                 fit: BoxFit.contain,
               ),
-            ),
-
-            const SizedBox(height: 8),   // khoảng cách sát
-            const Text(
-              'KẾT NỐI YÊU THƯƠNG',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
-            ),
+            )
           ],
         ),
       ),
