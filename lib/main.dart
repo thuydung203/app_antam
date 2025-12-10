@@ -7,15 +7,17 @@ import 'following.dart';
 import 'children_home.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ChildrenHomePage(), // Khi chạy app → mở LoadingPage đầu tiên
+      home: RoleSelectionPage(), // Khi chạy app → mở LoadingPage đầu tiên
     );
   }
 }

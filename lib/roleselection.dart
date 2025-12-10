@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'children_home.dart';
 class RoleSelectionPage extends StatefulWidget {
   const RoleSelectionPage({super.key});
 
@@ -65,7 +65,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     return Column(
       children: [
         AnimatedScale(
-          scale: isPressed ? 1.08 : 1.0, // hiệu ứng phóng to
+          scale: isPressed ? 1.08 : 1.0,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: SizedBox(
@@ -73,6 +73,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
             height: 110,
             child: ElevatedButton(
               onPressed: () async {
+                // Hiệu ứng nhấn
                 setState(() {
                   pressedRole = value;
                 });
@@ -85,6 +86,23 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                 });
 
                 debugPrint("Đã chọn vai trò: $value");
+
+                // ====== ĐIỀU HƯỚNG TẠI ĐÂY ======
+                if (value == "child") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChildrenHomePage(),
+                    ),
+                  );
+                  // } else if (value == "parent") {
+                  //   Navigator.push(
+                  //     context,
+                  //     MaterialPageRoute(
+                  //       builder: (context) => ParentPage(),
+                  //     ),
+                  //   );
+                }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(10),
@@ -93,9 +111,8 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: isSelected
-                        ? const Color(0xFF1CB5B4)
-                        : Colors.transparent,
+                    color: isSelected ? const Color(0xFF1CB5B4) : Colors
+                        .transparent,
                     width: 2,
                   ),
                 ),
