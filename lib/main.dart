@@ -5,15 +5,16 @@ import 'signup.dart';
 import 'roleselection.dart';
 import 'following.dart';
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: FollowPage(),   // Khi chạy app → mở LoadingPage đầu tiên
+      home: RoleSelectionPage(),   // Khi chạy app → mở LoadingPage đầu tiên
     );
   }
 }

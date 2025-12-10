@@ -1,7 +1,25 @@
+import 'package:antam_app/signup.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'signup.dart'; // nhớ import trang đăng ký của bạn
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  bool isSignIn = true; // trạng thái tab
+
+  // HÀM MỞ LINK
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Không mở được link: $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +39,7 @@ class LoginPage extends StatelessWidget {
 
                 const SizedBox(height: 30),
 
+                // ---------------- TAB SIGN IN / SIGN UP ----------------
                 Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFE2DE),
@@ -28,30 +47,55 @@ class LoginPage extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
+                      // -------- TAB SIGN IN --------
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            "Sign in",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => isSignIn = true);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isSignIn ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              "Sign in",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isSignIn ? Colors.black : Colors.black54,
+                              ),
                             ),
                           ),
                         ),
                       ),
+
+                      // -------- TAB SIGN UP --------
                       Expanded(
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: const Text(
-                            "Sign up",
-                            style: TextStyle(
-                              color: Colors.black54,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() => isSignIn = false);
+
+                            // điều hướng sang trang SignUp
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const SignUpPage()),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: !isSignIn ? Colors.white : Colors.transparent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              "Sign up",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: !isSignIn ? Colors.black : Colors.black54,
+                              ),
                             ),
                           ),
                         ),
@@ -61,6 +105,8 @@ class LoginPage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 25),
+
+                // ---------------- EMAIL INPUT ----------------
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                   decoration: BoxDecoration(
@@ -84,6 +130,8 @@ class LoginPage extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 15),
+
+                // ---------------- PASSWORD INPUT ----------------
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                   decoration: BoxDecoration(
@@ -110,7 +158,7 @@ class LoginPage extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // SIGN IN BUTTON
+                // ---------------- SIGN IN BUTTON ----------------
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -144,7 +192,7 @@ class LoginPage extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                // LINE + OR
+                // ---------------- OR LINE ----------------
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -158,15 +206,19 @@ class LoginPage extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                const SizedBox(height: 25),
-
-                // SOCIAL LOGIN
+                // ---------------- SOCIAL LOGIN ----------------
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset("assets/images/fb.png", width: 40),
+                    GestureDetector(
+                      onTap: () => _openUrl("https://facebook.com"),
+                      child: Image.asset("assets/images/fb.png", width: 40),
+                    ),
                     const SizedBox(width: 80),
-                    Image.asset("assets/images/gg.png", width: 40),
+                    GestureDetector(
+                      onTap: () => _openUrl("https://google.com"),
+                      child: Image.asset("assets/images/gg.png", width: 40),
+                    ),
                   ],
                 ),
 

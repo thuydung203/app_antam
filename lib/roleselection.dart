@@ -65,7 +65,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     return Column(
       children: [
         AnimatedScale(
-          scale: isPressed ? 1.08 : 1.0, // hiệu ứng phóng to
+          scale: isPressed ? 1.08 : 1.0,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: SizedBox(
@@ -85,6 +85,18 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                 });
 
                 debugPrint("Đã chọn vai trò: $value");
+
+                // ====== ĐIỀU HƯỚNG ======
+                if (value == "child") {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ()),
+                  );
+                }
+
+                if (value == "parent") {
+                  // thêm trang parent sau nếu bạn muốn
+                }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.all(10),
@@ -117,4 +129,4 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
       ],
     );
   }
-}
+

@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  bool isSignIn = true; // trạng thái tab
+
+  // HÀM MỞ LINK
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Không mở được link: $url');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -16,10 +31,7 @@ class SignUpPage extends StatelessWidget {
               children: [
 
                 // LOGO
-                Image.asset(
-                  "assets/images/logo_removeBG.png",
-                  width: 500,
-                ),
+                Image.asset("assets/images/logo_removeBG.png", width: 500),
 
                 const SizedBox(height: 25),
 
@@ -31,18 +43,26 @@ class SignUpPage extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
+                      // --- SIGN IN TAB ---
                       Expanded(
-                        child: Container(
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: const Text(
-                            "Sign in",
-                            style: TextStyle(
-                              color: Colors.black54,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pop(context);   // QUAY VỀ SIGN IN PAGE
+                          },
+                          child: Container(
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: const Text(
+                              "Sign in",
+                              style: TextStyle(
+                                color: Colors.black54,
+                              ),
                             ),
                           ),
                         ),
                       ),
+
+                      // --- SIGN UP TAB ---
                       Expanded(
                         child: Container(
                           alignment: Alignment.center,
@@ -52,9 +72,10 @@ class SignUpPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text(
-                            "sign up",
+                            "Sign up",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
+                              color: Colors.black,
                             ),
                           ),
                         ),
@@ -65,38 +86,17 @@ class SignUpPage extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                // FULL NAME
-                _inputField(
-                  hint: "Full Name",
-                  icon: Icons.person_outline,
-                ),
-
+                // FORM INPUTS
+                _inputField(hint: "Full Name", icon: Icons.person_outline),
                 const SizedBox(height: 12),
 
-                // EMAIL / PHONE
-                _inputField(
-                  hint: "Email / Phone number",
-                  icon: Icons.email_outlined,
-                ),
-
+                _inputField(hint: "Email / Phone number", icon: Icons.email_outlined),
                 const SizedBox(height: 12),
 
-                // PASSWORD
-                _inputField(
-                  hint: "Password",
-                  icon: Icons.lock_outline,
-                  isPassword: true,
-                ),
-
+                _inputField(hint: "Password", icon: Icons.lock_outline, isPassword: true),
                 const SizedBox(height: 12),
 
-                // CONFIRM PASSWORD
-                _inputField(
-                  hint: "Confirm Password",
-                  icon: Icons.lock_outline,
-                  isPassword: true,
-                ),
-
+                _inputField(hint: "Confirm Password", icon: Icons.lock_outline, isPassword: true),
                 const SizedBox(height: 20),
 
                 // SIGN UP BUTTON
@@ -114,9 +114,9 @@ class SignUpPage extends StatelessWidget {
                     child: const Text(
                       "SIGN UP",
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold
                       ),
                     ),
                   ),
@@ -124,17 +124,14 @@ class SignUpPage extends StatelessWidget {
 
                 const SizedBox(height: 15),
 
-                // Already have account
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Already have an account? ",
-                      style: TextStyle(color: Colors.black54),
-                    ),
+                    const Text("Already have an account? ",
+                        style: TextStyle(color: Colors.black54)),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pop(context);
+                        Navigator.pop(context);  // QUAY VỀ SIGN IN
                       },
                       child: const Text(
                         "Sign in",
@@ -161,13 +158,21 @@ class SignUpPage extends StatelessWidget {
                   ],
                 ),
 
+                const SizedBox(height: 15),
+
                 // SOCIAL LOGIN
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset("assets/images/fb.png", width: 42),
-                    const SizedBox(width: 40),
-                    Image.asset("assets/images/gg.png", width: 42),
+                    GestureDetector(
+                      onTap: () => _openUrl("https://facebook.com"),
+                      child: Image.asset("assets/images/fb.png", width: 40),
+                    ),
+                    const SizedBox(width: 80),
+                    GestureDetector(
+                      onTap: () => _openUrl("https://google.com"),
+                      child: Image.asset("assets/images/gg.png", width: 40),
+                    ),
                   ],
                 ),
 
@@ -180,7 +185,6 @@ class SignUpPage extends StatelessWidget {
     );
   }
 
-  // Custom Input widget
   Widget _inputField({
     required String hint,
     required IconData icon,
