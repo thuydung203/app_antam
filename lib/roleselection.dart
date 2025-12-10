@@ -1,3 +1,4 @@
+import 'package:antam_app/children_home.dart';
 import 'package:flutter/material.dart';
 
 class RoleSelectionPage extends StatefulWidget {
@@ -90,7 +91,8 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                 if (value == "child") {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ()),
+                    MaterialPageRoute(
+                        builder: (context) => const ChildrenHomePage ()),
                   );
                 }
 
@@ -129,4 +131,4 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
       ],
     );
   }
-
+}
