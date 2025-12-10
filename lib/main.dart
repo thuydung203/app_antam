@@ -4,6 +4,8 @@ import 'login.dart';
 import 'signup.dart';
 import 'roleselection.dart';
 import 'following.dart';
+import 'children_home.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -13,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: FollowPage(),   // Khi chạy app → mở LoadingPage đầu tiên
+      home: ChildrenHomePage(), // Khi chạy app → mở LoadingPage đầu tiên
     );
   }
 }
