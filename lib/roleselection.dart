@@ -1,4 +1,6 @@
 import 'package:antam_app/children_home.dart';
+import 'package:antam_app/following.dart';
+import 'package:antam_app/parent_home.dart';
 import 'package:flutter/material.dart';
 
 class RoleSelectionPage extends StatefulWidget {
@@ -92,12 +94,16 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const ChildrenHomePage ()),
+                        builder: (context) => const FollowPage ()),
                   );
                 }
 
                 if (value == "parent") {
-                  // thêm trang parent sau nếu bạn muốn
+                  Navigator.push(
+                    context,
+                      MaterialPageRoute(
+                          builder: (context) => const ParentHomePage()),
+                  );
                 }
               },
               style: ElevatedButton.styleFrom(

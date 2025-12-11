@@ -16,7 +16,6 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
       home: RoleSelectionPage(),   // Khi chạy app → mở LoadingPage đầu tiên
     );
   }
