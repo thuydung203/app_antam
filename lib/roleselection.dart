@@ -68,7 +68,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     return Column(
       children: [
         AnimatedScale(
-          scale: isPressed ? 1.08 : 1.0,
+          scale: isPressed ? 1.08 : 1.0, // hiệu ứng phóng to
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: SizedBox(
