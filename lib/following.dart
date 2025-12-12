@@ -21,8 +21,13 @@ class FollowPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
-        leading: const Icon(Icons.arrow_back_ios, color: Colors.black),
-        actions: const [
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+          actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16),
             child: Icon(Icons.search, color: Colors.black),

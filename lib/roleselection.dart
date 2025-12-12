@@ -89,7 +89,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
 
                 debugPrint("Đã chọn vai trò: $value");
 
-                // ====== ĐIỀU HƯỚNG ======
                 if (value == "child") {
                   Navigator.push(
                     context,
