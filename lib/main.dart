@@ -5,6 +5,8 @@ import 'signup.dart';
 import 'roleselection.dart';
 import 'following.dart';
 import 'children_home.dart';
+import 'confirmation.dart';
+import 'alarm_clock.dart';
 
 void main() {
   runApp(const MyApp());
@@ -17,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: RoleSelectionPage(), // Khi chạy app → mở LoadingPage đầu tiên
+      home: AlarmClockPage(), // Màn hình hiển thị đầu tiên
     );
   }
 }
