@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const AddFollowerApp());
+  // Đã đổi tên class trong runApp
+  runApp(const AddFollowerPage());
 }
 
-class AddFollowerApp extends StatelessWidget {
-  const AddFollowerApp({super.key});
+// Đã đổi tên class từ AddFollowerApp thành AddFollowerPage
+class AddFollowerPage extends StatelessWidget {
+  const AddFollowerPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +24,7 @@ class AddFollowerApp extends StatelessWidget {
   }
 }
 
-// Màn hình chính đã được chuyển sang StatefulWidget
+// Màn hình chính đã được chuyển sang StatefulWidget (giữ nguyên tên)
 class AddFollowerScreen extends StatefulWidget {
   const AddFollowerScreen({super.key});
 
@@ -79,7 +81,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
     }
   }
 
-  // Widget Helper cho các trường nhập liệu (Điều chỉnh để sử dụng TextEditingController)
+  // Widget Helper cho các trường nhập liệu
   Widget _buildTextFieldRow({
     required String label,
     required String placeholder,
@@ -199,8 +201,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                       size: 20,
                     ),
                     keyboardType: TextInputType.datetime,
-                    onTap: () =>
-                        _selectDate(context), // Xử lý sự kiện onTap tại đây
+                    onTap: () => _selectDate(context), // Xử lý sự kiện onTap
                   ),
                   // Số tuổi
                   _buildTextFieldRow(
@@ -208,8 +209,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                     placeholder: '??',
                     controller: _ageController,
                     keyboardType: TextInputType.number,
-                    readOnly:
-                        true, // Thường tuổi sẽ được tính tự động từ ngày sinh
+                    readOnly: true,
                   ),
                   // Tài khoản
                   _buildTextFieldRow(
@@ -254,6 +254,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
+                const Icon(Icons.search, color: Colors.black, size: 30),
               ],
             ),
           ),
