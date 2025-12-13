@@ -33,7 +33,7 @@ class AddFollowerScreen extends StatelessWidget {
   // Helper Widget cho các trường nhập liệu
   Widget _buildTextFieldRow({
     required String label,
-    required String hintText,
+    required String placeholder, // Đổi tên thành placeholder
     bool readOnly = false,
     Widget? suffixIcon,
     TextInputType keyboardType = TextInputType.text,
@@ -45,7 +45,7 @@ class AddFollowerScreen extends StatelessWidget {
         children: <Widget>[
           // Nhãn
           SizedBox(
-            width: 120, // Chiều rộng cố định cho nhãn
+            width: 120,
             child: Text(
               label,
               style: TextStyle(
@@ -59,23 +59,31 @@ class AddFollowerScreen extends StatelessWidget {
           // Ô nhập liệu
           Expanded(
             child: Container(
-              height: 52, // Chiều cao cố định
+              height: 52,
               decoration: BoxDecoration(
-                color: const Color(0x49B2A5A5).withOpacity(0.3), // Màu nền nhạt
+                color: const Color(0x49B2A5A5).withOpacity(0.3),
                 borderRadius: BorderRadius.circular(10),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: TextFormField(
                 readOnly: readOnly,
                 keyboardType: keyboardType,
-                initialValue: hintText, // Dùng initialValue thay vì hintText
+                // **ĐIỀU CHỈNH QUAN TRỌNG:**
+                // initialValue: '', // Giá trị ban đầu là rỗng
                 style: TextStyle(
-                  color: _placeholderColor,
+                  color: _primaryColor, // Chữ nhập vào sẽ là màu đen
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
-                  border: InputBorder.none, // Bỏ border mặc định
+                  // SỬ DỤNG HINT TEXT cho chữ chìm
+                  hintText: placeholder,
+                  hintStyle: TextStyle(
+                    color: _placeholderColor, // Màu chữ chìm
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  border: InputBorder.none,
                   contentPadding: EdgeInsets.zero,
                   suffixIcon: suffixIcon,
                   suffixIconConstraints: const BoxConstraints(
@@ -87,6 +95,7 @@ class AddFollowerScreen extends StatelessWidget {
                     ? () {
                         // Logic cho Date Picker
                         print('Mở Date Picker');
+                        // Ví dụ: showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime.now());
                       }
                     : null,
               ),
@@ -100,6 +109,7 @@ class AddFollowerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFEECE9),
       body: SingleChildScrollView(
         child: Column(
           children: <Widget>[
@@ -137,7 +147,6 @@ class AddFollowerScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.blueGrey, width: 2),
                       color: Colors.white,
-                      // Đây là nơi bạn sẽ hiển thị hình ảnh từ NetworkImage
                       image: const DecorationImage(
                         image: NetworkImage(
                           "https://via.placeholder.com/150/F5F5F5/808080?text=Profile",
@@ -158,14 +167,14 @@ class AddFollowerScreen extends StatelessWidget {
                   // Họ và tên
                   _buildTextFieldRow(
                     label: 'Họ và tên:',
-                    hintText: 'Nguyen Văn A',
+                    placeholder: 'Nguyen Văn A',
                   ),
                   // Quan hệ
-                  _buildTextFieldRow(label: 'Quan hệ:', hintText: 'Bố/Mẹ'),
+                  _buildTextFieldRow(label: 'Quan hệ:', placeholder: 'Bố/Mẹ'),
                   // Ngày sinh
                   _buildTextFieldRow(
                     label: 'Ngày sinh:',
-                    hintText: 'xx/yy/zzzz',
+                    placeholder: 'xx/yy/zzzz',
                     readOnly: true,
                     suffixIcon: const Icon(
                       Icons.calendar_today,
@@ -177,13 +186,13 @@ class AddFollowerScreen extends StatelessWidget {
                   // Số tuổi
                   _buildTextFieldRow(
                     label: 'Số tuổi:',
-                    hintText: '??',
+                    placeholder: '??',
                     keyboardType: TextInputType.number,
                   ),
                   // Tài khoản
                   _buildTextFieldRow(
                     label: 'Tài khoản:',
-                    hintText: 'email',
+                    placeholder: 'email',
                     keyboardType: TextInputType.emailAddress,
                   ),
 
@@ -200,10 +209,7 @@ class AddFollowerScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      minimumSize: const Size(
-                        289,
-                        67,
-                      ), // Kích thước nút theo hình ảnh
+                      minimumSize: const Size(289, 67),
                     ),
                     child: const Text(
                       'Thêm người theo dõi',
