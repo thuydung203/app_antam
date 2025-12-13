@@ -1,381 +1,435 @@
 import 'package:flutter/material.dart';
 
-class CreateMedicinePage extends StatelessWidget {
+class CreateMedicinePage extends StatefulWidget {
   const CreateMedicinePage({Key? key}) : super(key: key);
 
   @override
+  State<CreateMedicinePage> createState() => _CreateMedicinePageState();
+}
+
+class _CreateMedicinePageState extends State<CreateMedicinePage> {
+  // 1. Dữ liệu trạng thái cần lưu
+  TextEditingController _medicineNameController = TextEditingController();
+  TimeOfDay _selectedTime = TimeOfDay.now();
+  DateTime _selectedDate = DateTime.now();
+  List<String> _selectedDays = [
+    'T2',
+    'T3',
+    'T4',
+    'T5',
+    'T6',
+  ]; // Mặc định là Ngày thường
+  String _selectedSound = 'Ting ting';
+
+  final List<String> _daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+  final List<String> _soundOptions = ['Ting ting', 'Chuông báo', 'Mặc định'];
+
+  // Hàm hiển thị Time Picker
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime,
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(alwaysUse24HourFormat: false), // Dùng 12h AM/PM
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _selectedTime) {
+      setState(() {
+        _selectedTime = picked;
+      });
+    }
+  }
+
+  // Hàm hiển thị Date Picker (Dùng cho Lịch)
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  // Hàm hiển thị Dialog chọn ngày lặp lại (Thứ 2 - Chủ nhật)
+  void _showRepeatDayPicker() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Chọn ngày lặp lại'),
+          content: SingleChildScrollView(
+            child: StatefulBuilder(
+              builder: (context, setStateInDialog) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _daysOfWeek.map((day) {
+                    bool isSelected = _selectedDays.contains(day);
+                    return CheckboxListTile(
+                      title: Text(day),
+                      value: isSelected,
+                      onChanged: (bool? value) {
+                        setStateInDialog(() {
+                          if (value == true) {
+                            _selectedDays.add(day);
+                          } else {
+                            _selectedDays.remove(day);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Xong'),
+              onPressed: () {
+                setState(() {}); // Cập nhật trạng thái của widget chính
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Hàm hiển thị Dialog chọn âm thanh
+  void _showSoundPicker() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Chọn âm thanh'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _soundOptions.map((sound) {
+              return RadioListTile<String>(
+                title: Text(sound),
+                value: sound,
+                groupValue: _selectedSound,
+                onChanged: (String? value) {
+                  if (value != null) {
+                    setState(() {
+                      _selectedSound = value;
+                    });
+                    Navigator.of(context).pop();
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  // Chuyển đổi List<String> ngày thành chuỗi hiển thị
+  String get _repeatDayText {
+    if (_selectedDays.isEmpty) return 'Không lặp lại';
+    if (_selectedDays.length == 5 &&
+        _selectedDays.contains('T2') &&
+        _selectedDays.contains('T6') &&
+        !_selectedDays.contains('T7') &&
+        !_selectedDays.contains('CN')) {
+      return 'Ngày thường';
+    }
+    if (_selectedDays.length == 7) return 'Hàng ngày';
+    return _selectedDays.join(', ');
+  }
+
+  // Định dạng ngày hiển thị (DD/MM/YYYY)
+  String get _formattedDate {
+    return '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Lưu ý: Sử dụng Stack và Positioned với kích thước cố định (428x926)
-    // sẽ khiến giao diện bị vỡ (non-responsive) trên các thiết bị khác.
+    // Sử dụng Layout Builder để responsive hơn
     return Scaffold(
-      body: Container(
-        width: 428,
-        height: 926,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFCEBF),
-        ), // Màu nền cam nhạt
-        child: Stack(
-          children: [
-            // Phần trên (Top Banner) - Ảnh nền
-            Positioned(
-              left: 25,
+      body: Column(
+        children: [
+          // 1. Top Banner (An Tâm, Con)
+          Container(
+            padding: const EdgeInsets.only(
               top: 40,
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: 'An Tâm, Con\n',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    TextSpan(
-                      text: 'Xin chào, anh A',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Tiêu đề
-            const Positioned(
               left: 25,
-              top: 10,
-              child: Text(
-                'CREATE MEDICINE',
-                style: TextStyle(color: Colors.white),
-              ),
+              right: 25,
+              bottom: 20,
             ),
-            // Icon </>
-            const Positioned(
-              right: 10,
-              top: 10,
-              child: Icon(Icons.code, color: Colors.white),
-            ),
-
-            // Phần dưới (Modal/Container Trắng)
-            Positioned(
-              left: -10,
-              top: 354,
-              child: Container(
-                width: 446,
-                height: 613,
-                decoration: ShapeDecoration(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    side: BorderSide(width: 1, color: Colors.transparent),
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                ),
-              ),
-            ),
-
-            // Icon Đóng (X)
-            const Positioned(
-              left: 30,
-              top: 380,
-              child: Icon(Icons.close, size: 38),
-            ),
-            // Icon Xác nhận (Tick)
-            const Positioned(
-              right: 30,
-              top: 380,
-              child: Icon(Icons.check, size: 38, color: Colors.green),
-            ),
-
-            // Icon Tạo lịch uống thuốc (Viên thuốc)
-            Positioned(
-              left: 170, // Căn giữa
-              top: 425,
-              child: Stack(
+            color: const Color(0xFFFFCEBF),
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.medical_services_outlined,
-                    size: 80,
-                    color: Colors.grey,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'CREATE MEDICINE',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                      Icon(Icons.code, color: Colors.white),
+                    ],
                   ),
-                  // Thêm icon '+' nhỏ ở góc để mô phỏng "thêm"
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black12, blurRadius: 4),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.add_circle,
-                        color: Colors.black,
-                        size: 30,
-                      ),
+                  const SizedBox(height: 10),
+                  const Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'An Tâm, Con\n',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 40,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Xin chào, anh A',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
+          ),
 
-            // Tiêu đề "Tạo lịch uống thuốc"
-            const Positioned(
-              left: 85,
-              top: 524,
-              child: Text(
-                'Tạo lịch uống thuốc',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 26,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
+          // 2. Main Content (Modal White)
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(40),
+                  topRight: Radius.circular(40),
                 ),
               ),
-            ),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Đóng/Xác nhận
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(Icons.close, size: 38),
+                        Icon(Icons.check, size: 38, color: Colors.green),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
 
-            // Input Tên thuốc
-            Positioned(
-              left: 48,
-              top: 574,
-              child: Container(
-                width: 332,
-                height: 52,
-                decoration: ShapeDecoration(
-                  color: const Color(0xFFFFCEBF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 14, top: 16),
-                  child: Opacity(
-                    opacity: 0.50,
-                    child: Text(
-                      'Nhập tên thuốc...',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w500,
+                    // Icon và Tiêu đề
+                    Column(
+                      children: [
+                        Icon(
+                          Icons.medical_services_outlined,
+                          size: 80,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 5),
+                        const Text(
+                          'Tạo lịch uống thuốc',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Input Tên thuốc
+                    TextField(
+                      controller: _medicineNameController,
+                      decoration: InputDecoration(
+                        hintText: 'Nhập tên thuốc...',
+                        hintStyle: TextStyle(
+                          color: Colors.black.withOpacity(0.5),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFFFCEBF),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 16,
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 30),
+
+                    // --- CHỌN LỊCH (Ngày & Giờ) ---
+
+                    // Chọn Ngày
+                    InkWell(
+                      onTap: () => _selectDate(context),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Ngày',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  _formattedDate,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black.withOpacity(0.4),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 18,
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Divider(color: Colors.black.withOpacity(0.2)),
+
+                    // Chọn Giờ (Picker mô phỏng trong Figma được thay bằng Text & Time Picker)
+                    InkWell(
+                      onTap: () => _selectTime(context),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Thời gian',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  _selectedTime.format(context),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.access_time,
+                                  size: 20,
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Divider(color: Colors.black.withOpacity(0.2)),
+                    const SizedBox(height: 20),
+
+                    // --- THIẾT LẬP KHÁC ---
+
+                    // Lặp lại (Repeat)
+                    ListTile(
+                      title: const Text(
+                        'Lặp lại',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _repeatDayText,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black.withOpacity(0.4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 15,
+                            color: Colors.black.withOpacity(0.3),
+                          ),
+                        ],
+                      ),
+                      onTap: _showRepeatDayPicker,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    Divider(color: Colors.black.withOpacity(0.2)),
+
+                    // Âm thanh (Sound)
+                    ListTile(
+                      title: const Text(
+                        'Âm thanh',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _selectedSound,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black.withOpacity(0.4),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 15,
+                            color: Colors.black.withOpacity(0.3),
+                          ),
+                        ],
+                      ),
+                      onTap: _showSoundPicker,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    Divider(color: Colors.black.withOpacity(0.2)),
+                  ],
                 ),
               ),
             ),
-
-            // --- CỘT CHỌN GIỜ ---
-
-            // Vùng chứa (để dễ dàng căn chỉnh sau này)
-            Positioned(
-              left: 47,
-              top: 676,
-              child: Container(
-                width: 332,
-                height: 30,
-                // Màu nền tạm thời cho vùng đang chọn
-                decoration: ShapeDecoration(
-                  color: const Color(0x00D9D9D9),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-              ),
-            ),
-
-            // Giờ - Phút - SA/CH (Không phải Picker thực tế, chỉ là Text)
-            // Column 1 (Giờ)
-            Positioned(
-              left: 110,
-              top: 649,
-              child: _TimePickerColumn(
-                top: '10',
-                middle: '11',
-                bottom: '12',
-                isMiddleBold: true,
-              ),
-            ),
-            // Column 2 (Phút)
-            Positioned(
-              left: 190,
-              top: 649,
-              child: _TimePickerColumn(
-                top: '10',
-                middle: '11',
-                bottom: '12',
-                isMiddleBold: true,
-              ),
-            ),
-            // Column 3 (SA/CH)
-            Positioned(
-              left: 255,
-              top: 649,
-              child: _TimePickerColumn(
-                top: 'CH',
-                middle: 'SA',
-                bottom: 'CH',
-                isMiddleBold: true,
-              ),
-            ),
-
-            // --- CÁC THIẾT LẬP KHÁC ---
-
-            // Lặp lại
-            const Positioned(
-              left: 63,
-              top: 812,
-              child: Text(
-                'Lặp lại',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const Positioned(
-              left: 243,
-              top: 812,
-              child: Opacity(
-                opacity: 0.40,
-                child: Text(
-                  'Ngày thường',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w200,
-                  ),
-                ),
-              ),
-            ),
-            // Icon mũi tên (Ngày thường)
-            const Positioned(
-              left: 340,
-              top: 816,
-              child: Opacity(
-                opacity: 0.30,
-                child: Icon(Icons.arrow_forward_ios, size: 15),
-              ),
-            ),
-
-            // Âm thanh
-            const Positioned(
-              left: 63,
-              top: 853,
-              child: Text(
-                'Âm thanh',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const Positioned(
-              left: 273,
-              top: 853,
-              child: Opacity(
-                opacity: 0.40,
-                child: Text(
-                  'Ting ting',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w200,
-                  ),
-                ),
-              ),
-            ),
-            // Icon mũi tên (Âm thanh)
-            const Positioned(
-              left: 339,
-              top: 857,
-              child: Opacity(
-                opacity: 0.30,
-                child: Icon(Icons.arrow_forward_ios, size: 15),
-              ),
-            ),
-
-            // Dòng kẻ phân cách
-            Positioned(
-              left: 59,
-              top: 842,
-              child: Opacity(
-                opacity: 0.20,
-                child: Container(width: 320, height: 1, color: Colors.black),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-// Widget nhỏ để mô phỏng cột chọn giờ
-class _TimePickerColumn extends StatelessWidget {
-  final String top;
-  final String middle;
-  final String bottom;
-  final bool isMiddleBold;
-
-  const _TimePickerColumn({
-    required this.top,
-    required this.middle,
-    required this.bottom,
-    this.isMiddleBold = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Top - Nhạt
-        Text(
-          top,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w100,
-          ),
-        ),
-        // Middle - Đậm
-        const SizedBox(height: 5),
-        Text(
-          middle,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 32,
-            fontFamily: 'Inter',
-            fontWeight: isMiddleBold ? FontWeight.w600 : FontWeight.w100,
-          ),
-        ),
-        // Bottom - Nhạt
-        const SizedBox(height: 5),
-        Text(
-          bottom,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w100,
-          ),
-        ),
-      ],
     );
   }
 }
