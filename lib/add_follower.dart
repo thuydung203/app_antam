@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const AddFollowerApp());
+  runApp(const AddFollowerPage());
 }
 
-class AddFollowerApp extends StatelessWidget {
-  const AddFollowerApp({super.key});
+class AddFollowerPage extends StatelessWidget {
+  const AddFollowerPage({super.key});
 
   @override
   Widget build(BuildContext context) {

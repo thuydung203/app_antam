@@ -1,3 +1,4 @@
+import 'package:antam_app/add_follower.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -75,10 +76,14 @@ class FollowPage extends StatelessWidget {
         ],
       ),
 
-      // ===== FLOATING ADD BUTTON =====
+      // add fl
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF6EE7B7),
         onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddFollowerPage()),
+          );
           debugPrint("Thêm người theo dõi");
         },
         child: const Icon(Icons.add, color: Colors.black),

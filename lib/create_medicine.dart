@@ -155,19 +155,10 @@ class CreateMedicinePage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 14, top: 16),
-                  child: Opacity(
-                    opacity: 0.50,
-                    child: Text(
-                      'Nhập tên thuốc...',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                child: const TextField(
+                  decoration: InputDecoration(
+                    hintText: "Nhập tên thuốc...",
+                    border: InputBorder.none,
                   ),
                 ),
               ),
@@ -220,7 +211,7 @@ class CreateMedicinePage extends StatelessWidget {
               left: 255,
               top: 649,
               child: _TimePickerColumn(
-                top: 'CH',
+                top: '',
                 middle: 'SA',
                 bottom: 'CH',
                 isMiddleBold: true,
