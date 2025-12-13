@@ -161,7 +161,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
     return Scaffold(
       body: Column(
         children: [
-          // 1. Top Banner (An Tâm, Con)
+          // 1. Top Banner (An Tâm, Con) - ĐÃ SỬA MÀU CHỮ
           Container(
             padding: const EdgeInsets.only(
               top: 40,
@@ -179,9 +179,12 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                     children: [
                       const Text(
                         'CREATE MEDICINE',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 12,
+                        ), // Đã sửa màu chữ
                       ),
-                      Icon(Icons.code, color: Colors.white),
+                      Icon(Icons.code, color: Colors.black), // Đã sửa màu icon
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -191,7 +194,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                         TextSpan(
                           text: 'An Tâm, Con\n',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.black, // Đã sửa màu chữ
                             fontSize: 40,
                             fontWeight: FontWeight.w700,
                           ),
@@ -199,7 +202,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                         TextSpan(
                           text: 'Xin chào, anh A',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.black, // Đã sửa màu chữ
                             fontSize: 20,
                             fontWeight: FontWeight.w500,
                           ),
@@ -227,12 +230,47 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Đóng/Xác nhận
+                    // Đóng/Xác nhận (ĐÃ CÓ HIỆU ỨNG NHẤN)
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.close, size: 38),
-                        Icon(Icons.check, size: 38, color: Colors.green),
+                        // Nút ĐÓNG (X)
+                        InkWell(
+                          onTap: () {
+                            // Xử lý sự kiện Đóng
+                            Navigator.of(context).pop();
+                            debugPrint('Đóng lịch uống thuốc');
+                          },
+                          borderRadius: BorderRadius.circular(50),
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(
+                              Icons.close,
+                              size: 38,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+
+                        // Nút XÁC NHẬN (V)
+                        InkWell(
+                          onTap: () {
+                            // Xử lý sự kiện Xác nhận/Lưu
+                            debugPrint(
+                              'Xác nhận tạo lịch uống thuốc: ${_medicineNameController.text}',
+                            );
+                            // Thêm logic lưu dữ liệu ở đây
+                          },
+                          borderRadius: BorderRadius.circular(50),
+                          child: const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Icon(
+                              Icons.check,
+                              size: 38,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -319,7 +357,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                     ),
                     Divider(color: Colors.black.withOpacity(0.2)),
 
-                    // Chọn Giờ (Picker mô phỏng trong Figma được thay bằng Text & Time Picker)
+                    // Chọn Giờ
                     InkWell(
                       onTap: () => _selectTime(context),
                       child: Padding(
