@@ -20,7 +20,6 @@ class AddFollowerPage extends StatelessWidget {
     );
   }
 }
-
 // Màn hình chính
 class AddFollowerScreen extends StatelessWidget {
   const AddFollowerScreen({super.key});
@@ -68,15 +67,12 @@ class AddFollowerScreen extends StatelessWidget {
               child: TextFormField(
                 readOnly: readOnly,
                 keyboardType: keyboardType,
-                // **ĐIỀU CHỈNH QUAN TRỌNG:**
-                // initialValue: '', // Giá trị ban đầu là rỗng
                 style: TextStyle(
                   color: _primaryColor, // Chữ nhập vào sẽ là màu đen
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
-                  // SỬ DỤNG HINT TEXT cho chữ chìm
                   hintText: placeholder,
                   hintStyle: TextStyle(
                     color: _placeholderColor, // Màu chữ chìm
@@ -172,17 +168,6 @@ class AddFollowerScreen extends StatelessWidget {
                   // Quan hệ
                   _buildTextFieldRow(label: 'Quan hệ:', placeholder: 'Bố/Mẹ'),
                   // Ngày sinh
-                  _buildTextFieldRow(
-                    label: 'Ngày sinh:',
-                    placeholder: 'xx/yy/zzzz',
-                    readOnly: true,
-                    suffixIcon: const Icon(
-                      Icons.calendar_today,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    keyboardType: TextInputType.datetime,
-                  ),
                   // Số tuổi
                   _buildTextFieldRow(
                     label: 'Số tuổi:',

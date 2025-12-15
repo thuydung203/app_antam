@@ -120,12 +120,21 @@ class _LoginPageState extends State<LoginPage> {
                       )
                     ],
                   ),
-                  child: const TextField(
+                  child: TextFormField(
                     decoration: InputDecoration(
                       icon: Icon(Icons.email_outlined),
                       hintText: "Email / Phone number",
                       border: InputBorder.none,
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Email không được để trống";
+                      }
+                      if (!value.contains("@")) {
+                        return "Email không hợp lệ";
+                      }
+                      return null;
+                    },
                   ),
                 ),
 
@@ -145,7 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                       )
                     ],
                   ),
-                  child: const TextField(
+                  child: TextFormField(
                     obscureText: true,
                     decoration: InputDecoration(
                       icon: Icon(Icons.lock_outline),
@@ -153,6 +162,12 @@ class _LoginPageState extends State<LoginPage> {
                       suffixIcon: Icon(Icons.visibility_outlined),
                       border: InputBorder.none,
                     ),
+                    validator: (value) {
+                      if (value == null || value.length < 6) {
+                        return "Mật khẩu phải >= 6 ký tự";
+                      }
+                      return null;
+                    },
                   ),
                 ),
 

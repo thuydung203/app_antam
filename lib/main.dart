@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: AddFollowerPage(), // Khi chạy app → mở LoadingPage đầu tiên
+      home: LoadingPage(), // Khi chạy app → mở LoadingPage đầu tiên
     );
   }
 }

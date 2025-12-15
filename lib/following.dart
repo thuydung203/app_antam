@@ -1,4 +1,5 @@
 import 'package:antam_app/add_follower.dart';
+import 'package:antam_app/children_home.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -23,12 +24,12 @@ class FollowPage extends StatelessWidget {
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
         leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-          actions: const [
+        actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16),
             child: Icon(Icons.search, color: Colors.black),
@@ -65,6 +66,14 @@ class FollowPage extends StatelessWidget {
             image: "assets/images/parent.png",
             name: "Bố: Nguyễn Văn A",
             age: "Tuổi: 80",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChildrenHomePage(),
+                ),
+              );
+            },
           ),
 
           // ===== CARD MẸ =====
@@ -76,64 +85,73 @@ class FollowPage extends StatelessWidget {
         ],
       ),
 
-      // add fl
+      // ===== FLOATING ADD BUTTON =====
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF6EE7B7),
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddFollowerPage()),
+            MaterialPageRoute(
+              builder: (context) => const AddFollowerPage(),
+            ),
           );
-          debugPrint("Thêm người theo dõi");
         },
         child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
 
-  // ===== PERSON CARD =====
+  // ===== PERSON CARD (ĐÃ SỬA) =====
   Widget _personCard({
     required String image,
     required String name,
     required String age,
+    VoidCallback? onTap, // ✅ THÊM onTap
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFC1A8),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          // AVATAR
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.white,
-            child: Image.asset(image, width: 40),
-          ),
+    return InkWell(
+      onTap: onTap, // ✅ XỬ LÝ CLICK
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFC1A8),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            // AVATAR
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: Colors.white,
+              child: Image.asset(image, width: 40),
+            ),
 
-          const SizedBox(width: 16),
+            const SizedBox(width: 16),
 
-          // INFO
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+            // INFO
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                age,
-                style: const TextStyle(fontSize: 14),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(height: 5),
+                Text(
+                  age,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios, size: 16),
+          ],
+        ),
       ),
     );
   }
