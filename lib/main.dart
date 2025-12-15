@@ -1,3 +1,6 @@
+import 'package:antam_app/add_follower.dart';
+import 'package:antam_app/add_images.dart';
+import 'package:antam_app/create_medicine.dart';
 import 'package:flutter/material.dart';
 import 'loading.dart';
 import 'login.dart';
@@ -9,7 +12,6 @@ import 'children_home.dart';
 void main() {
   runApp(const MyApp());
 }
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -17,7 +19,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: RoleSelectionPage(), // Khi chạy app → mở LoadingPage đầu tiên
+      home: LoadingPage(), // Khi chạy app → mở LoadingPage đầu tiên
     );
   }
 }
