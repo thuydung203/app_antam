@@ -254,7 +254,6 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
-                const Icon(Icons.search, color: Colors.black, size: 30),
               ],
             ),
           ),
