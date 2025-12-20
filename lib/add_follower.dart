@@ -192,15 +192,18 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                   // Ngày sinh
                   _buildTextFieldRow(
                     label: 'Ngày sinh:',
-                    placeholder: 'xx/yy/zzzz',
+                    placeholder: 'dd/mm/yyyy',
+                    controller: _dobController, // ✅ BẮT BUỘC
                     readOnly: true,
+                    keyboardType: TextInputType.datetime,
                     suffixIcon: const Icon(
                       Icons.calendar_today,
                       color: Colors.grey,
                       size: 20,
                     ),
-                    keyboardType: TextInputType.datetime,
+                    onTap: () => _selectDate(context), // ✅ mở DatePicker
                   ),
+
                   // Số tuổi
                   _buildTextFieldRow(
                     label: 'Số tuổi:',
