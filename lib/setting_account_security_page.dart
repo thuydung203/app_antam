@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+// Import các trang để điều hướng
+import 'package:antam_app/children_home.dart';
+import 'package:antam_app/check_in_history.dart';
+import 'package:antam_app/add_images.dart';
+import 'package:antam_app/setting.dart';
 
 class SettingSecurityLoginPage extends StatefulWidget {
   const SettingSecurityLoginPage({super.key});
@@ -15,6 +20,9 @@ class _SettingSecurityLoginPageState extends State<SettingSecurityLoginPage> {
   bool isLoginAlert = true;
   bool isDeviceManagement = true;
   bool isLoginHistory = true;
+
+  // Index cho Setting vẫn là 4
+  final int _currentIndex = 4;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +46,6 @@ class _SettingSecurityLoginPageState extends State<SettingSecurityLoginPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // ----------------- Đăng nhập & mật khẩu -------------------
             _buildSectionTitle("Đăng nhập và Mật khẩu"),
             _buildSwitchTile(
@@ -78,22 +85,84 @@ class _SettingSecurityLoginPageState extends State<SettingSecurityLoginPage> {
           ],
         ),
       ),
+
+      // ===== BOTTOM NAV (Đã đồng bộ) =====
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          if (index == _currentIndex) {
+            Navigator.pop(context); // Quay lại trang Setting chính
+            return;
+          }
+
+          switch (index) {
+            case 0:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChildrenHomePage(),
+                ),
+              );
+              break;
+            case 1:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CheckInHistoryPage(),
+                ),
+              );
+              break;
+            case 2:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const AddImage()),
+              );
+              break;
+            case 3:
+              debugPrint("Sang trang Navigation/GPS");
+              break;
+            case 4:
+              Navigator.pop(context);
+              break;
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        backgroundColor: Colors.white,
+        elevation: 10,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: ''),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart, size: 28),
+            label: '',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.image, size: 28), label: ''),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.navigation, size: 28),
+            label: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings, size: 28),
+            label: '',
+          ),
+        ],
+      ),
     );
   }
 
-  // Widget tiêu đề nhóm
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style:
-            const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
       ),
     );
   }
 
-  // Ô có switch
   Widget _buildSwitchTile({
     required String title,
     required bool value,
@@ -101,7 +170,10 @@ class _SettingSecurityLoginPageState extends State<SettingSecurityLoginPage> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ), // Giảm vertical để cân đối với Switch
       decoration: BoxDecoration(
         color: const Color(0xFFF8F6F6),
         borderRadius: BorderRadius.circular(12),
@@ -110,22 +182,19 @@ class _SettingSecurityLoginPageState extends State<SettingSecurityLoginPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: const TextStyle(fontSize: 15)),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          )
+          Switch(value: value, onChanged: onChanged, activeColor: Colors.blue),
         ],
       ),
     );
   }
 
-  // Ô điều hướng (có mũi tên)
   Widget _buildNavigationTile({
     required String title,
     required Function() onTap,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -137,7 +206,7 @@ class _SettingSecurityLoginPageState extends State<SettingSecurityLoginPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(title, style: const TextStyle(fontSize: 15)),
-            const Icon(Icons.arrow_forward_ios, size: 17),
+            const Icon(Icons.arrow_forward_ios, size: 17, color: Colors.grey),
           ],
         ),
       ),
