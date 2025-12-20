@@ -8,10 +8,13 @@ import 'signup.dart';
 import 'roleselection.dart';
 import 'following.dart';
 import 'children_home.dart';
+import 'check_in_history.dart';
+import 'add_images.dart';
 
 void main() {
   runApp(const MyApp());
 }
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -19,7 +22,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: AddFollowerPage(), // Khi chạy app → mở LoadingPage đầu tiên
+      home: const AddImage(), // Khi chạy app → mở LoadingPage đầu tiên
     );
   }
 }
