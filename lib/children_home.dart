@@ -1,97 +1,95 @@
+import 'package:antam_app/check_in_history.dart';
+import 'package:antam_app/create_medicine.dart';
+import 'package:antam_app/create_checkup.dart';
+import 'package:antam_app/following.dart';
 import 'package:flutter/material.dart';
 
-class ChildrenHomePage extends StatelessWidget {
+class ChildrenHomePage extends StatefulWidget {
   const ChildrenHomePage({Key? key}) : super(key: key);
 
-  // --- HÀM XÂY DỰNG WIDGET CHÍNH ---
+  @override
+  State<ChildrenHomePage> createState() => _ChildrenHomePageState();
+}
 
+class _ChildrenHomePageState extends State<ChildrenHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF7F8), // Màu nền tổng thể
+      backgroundColor: const Color(0xFFFFF7F7),
 
+      // ===== APP BAR =====
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF7F8),
+        backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          "CHILDREN HOME",
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: (){
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const FollowPage()),
+            );
+          }
         ),
-        centerTitle: true,
       ),
 
+      // ===== BODY =====
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // BACK ICON
-            const Padding(
-              padding: EdgeInsets.only(left: 16, bottom: 8),
-              child: Icon(
-                Icons.arrow_back_ios,
-                size: 28,
-                color: Colors.black,
-              ), // Đổi sang arrow_back_ios cho đúng phong cách UI
-            ),
-
-            // CẢNH BÁO
             _warningCard(),
-
-            // AVATAR + INFO
             _userInfo(),
 
-            // TRẠNG THÁI UỐNG THUỐC
-            _sectionHeader("TRẠNG THÁI UỐNG THUỐC"),
+            _sectionHeader(
+              title: "TRẠNG THÁI UỐNG THUỐC",
+              onAdd: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CreateMedicinePage()),
+                );
+              },
+            ),
             _medicineCard("Thuốc huyết áp", "Đã uống lúc 08:00", true),
             _medicineCard("Thuốc tiểu đường", "Chưa uống", false),
 
-            // LỊCH TÁI KHÁM
-            _sectionHeader("LỊCH TÁI KHÁM"),
+            _sectionHeader(
+              title: "LỊCH TÁI KHÁM",
+              onAdd: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CreateCheckupPage()),
+                );
+              },
+            ),
             _reExaminationCard(),
 
-            // CHECK-IN
-            _sectionHeader("LỊCH SỬ CHECK-IN"),
+            _sectionHeader(title: "LỊCH SỬ CHECK-IN"),
             _checkinCard(),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
           ],
         ),
       ),
-
-      bottomNavigationBar: _bottomNav(),
     );
   }
 
-  // --------------------------------------------------------
-  // WIDGETS
-  // --------------------------------------------------------
-
+  // ================= COMPONENTS (Giữ nguyên các hàm helper) =================
   Widget _warningCard() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFF0C2),
+          color: const Color(0xFFFFE6A7),
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Row(
           children: [
-            Icon(
-              Icons.error,
-              color: Color(0xE5ED3333),
-              size: 20,
-            ), // Dùng màu đỏ đậm theo thiết kế trước đó
+            Icon(Icons.error, color: Colors.red),
             SizedBox(width: 8),
             Expanded(
               child: Text(
                 "Cảnh báo! Cha mẹ chưa xác nhận lịch uống thuốc Huyết áp sáng.",
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+                style: TextStyle(fontSize: 14),
               ),
             ),
           ],
@@ -102,123 +100,84 @@ class ChildrenHomePage extends StatelessWidget {
 
   Widget _userInfo() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // Avatar
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFD2D2),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.person, size: 28, color: Colors.white),
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: const Color(0xFFFFC1A8),
+            child: const Icon(Icons.person, color: Colors.white),
           ),
-
-          const SizedBox(width: 16),
-
-          // Text info
-          Column(
+          const SizedBox(width: 12),
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                "Bố: Nguyễn Văn A",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              SizedBox(height: 4),
-              Text("Tuổi: 80", style: TextStyle(fontSize: 14)),
-            ],
-          ),
-
-          const Spacer(),
-
-          // Người giám sát
-          Row(
             children: [
-              _smallAvatar(),
-              Transform.translate(
-                offset: const Offset(-10, 0),
-                child: _smallAvatar(),
-              ),
-              // Bỏ bớt avatar thứ 3 hoặc chồng lên nhau chính xác hơn
-              // Transform.translate(
-              //   offset: Offset(-20, 0),
-              //   child: _smallAvatar(),
-              // ),
+              Text("Bố: Nguyễn Văn A",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text("Tuổi: 80"),
             ],
           ),
+          const Spacer(),
+          _smallAvatar(),
+          Transform.translate(offset: const Offset(-10, 0), child: _smallAvatar()),
         ],
       ),
     );
   }
 
   Widget _smallAvatar() {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: const BoxDecoration(
-        color: Color(0xFFFFD2D2),
-        shape: BoxShape.circle,
-      ),
-      child: const Icon(Icons.person, size: 16, color: Colors.white),
+    return const CircleAvatar(
+      radius: 14,
+      backgroundColor: Color(0xFFFFC1A8),
+      child: Icon(Icons.person, size: 14, color: Colors.white),
     );
   }
 
-  Widget _sectionHeader(String text) {
+  Widget _sectionHeader({required String title, VoidCallback? onAdd}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            text,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 20),
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-          // Chỉ hiển thị icon + cho TRẠNG THÁI UỐNG THUỐC và LỊCH TÁI KHÁM
-          if (text == "TRẠNG THÁI UỐNG THUỐC" || text == "LỊCH TÁI KHÁM")
-            const Icon(Icons.add, size: 26),
+          if (onAdd != null)
+            IconButton(
+              icon: const Icon(Icons.add, size: 26),
+              onPressed: onAdd,
+            ),
         ],
       ),
     );
   }
 
-  Widget _medicineCard(String name, String time, bool done) {
+  Widget _medicineCard(String name, String status, bool done) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Container(
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
           borderRadius: BorderRadius.circular(20),
         ),
-        padding: const EdgeInsets.all(16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(time, style: const TextStyle(fontSize: 14)),
+                Text(name,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(status),
               ],
             ),
             Icon(
               done ? Icons.check_circle : Icons.cancel,
               color: done ? Colors.green : Colors.red,
-              size: 32,
+              size: 28,
             ),
           ],
         ),
@@ -228,184 +187,94 @@ class ChildrenHomePage extends StatelessWidget {
 
   Widget _reExaminationCard() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
-        padding: const EdgeInsets.all(16),
         child: Row(
-          children: [
-            const Icon(Icons.calendar_month, size: 30, color: Colors.black87),
-            const SizedBox(width: 12),
-
+          children: const [
+            Icon(Icons.calendar_month),
+            SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  "Hẹn khám tim mạch",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                SizedBox(height: 4),
-                Text("Thứ 2, 8/12/2025", style: TextStyle(fontSize: 14)),
+              children: [
+                Text("Hẹn khám tim mạch",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text("Thứ 2, 8/12/2025"),
               ],
             ),
-
-            const Spacer(),
-            const Icon(Icons.favorite, color: Colors.redAccent),
+            Spacer(),
+            Icon(Icons.favorite, color: Colors.red),
           ],
         ),
       ),
     );
   }
 
-  // ---------------------------
-  // SỬA ĐỔI _checkinCard để vòng tròn TO hơn và đúng style
-  // ---------------------------
   Widget _checkinCard() {
-    const double circleSize = 120.0; // Tăng kích thước vòng tròn (theo yêu cầu)
-    const double strokeWidth = 8.0; // Độ dày viền
-    const Color progressColor = Color(0xFFFFA387); // Màu cam/hồng nhạt
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Vòng tròn đẹp hơn (Stack 2 lớp)
             SizedBox(
-              width: circleSize,
-              height: circleSize,
+              width: 110,
+              height: 110,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Lớp 1: CircularProgressIndicator (Tạo viền tiến độ)
                   CircularProgressIndicator(
-                    value: 1, // 100%
-                    strokeWidth: strokeWidth,
-                    backgroundColor: Colors.transparent, // Không có nền
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      progressColor,
-                    ),
+                    value: 1,
+                    strokeWidth: 8,
+                    valueColor:
+                    const AlwaysStoppedAnimation(Color(0xFFFFA387)),
                   ),
-
-                  // Lớp 2: Container/Text (Tạo nền trắng và viền mỏng bên ngoài)
-                  Container(
-                    width: circleSize - strokeWidth,
-                    height: circleSize - strokeWidth,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: progressColor.withOpacity(
-                          0.5,
-                        ), // Viền mỏng bên ngoài
-                        width: 5,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        "100%",
-                        style: TextStyle(
-                          fontSize: 28, // Font to hơn
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
+                  const Text(
+                    "100%",
+                    style:
+                    TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(width: 20),
-
-            // Text + Button
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Tuân thủ tháng này",
-                    style: TextStyle(
-                      fontSize: 20, // Tăng font size
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: progressColor, // Màu cam nhạt
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          20,
-                        ), // Bo góc nhiều hơn
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Tuân thủ tháng này",
+                    style:
+                    TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const CheckInHistoryPage()
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      "Xem chi tiết",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                      ), // Tăng font size
-                    ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFA387),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                   ),
-                ],
-              ),
+                  child: const Text("Xem chi tiết",
+                      style: TextStyle(color: Colors.black)),
+                ),
+              ],
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _bottomNav() {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      elevation: 10,
-      selectedItemColor: Colors.blue,
-      unselectedItemColor: Colors.grey,
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home, size: 32), label: ''),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.bar_chart, size: 28),
-          label: '',
-        ),
-        BottomNavigationBarItem(icon: Icon(Icons.image, size: 28), label: ''),
-        BottomNavigationBarItem(icon: Icon(Icons.send, size: 28), label: ''),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.settings, size: 28),
-          label: '',
-        ),
-      ],
     );
   }
 }

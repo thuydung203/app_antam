@@ -200,27 +200,6 @@ class CheckInHistoryPage extends StatelessWidget {
     );
   }
 
-  // Widget thanh điều hướng dưới cùng
-  Widget _buildBottomNav() {
-    return Container(
-      height: 77,
-      decoration: const BoxDecoration(
-        color: Color(0xFFD9D9D9), // Màu xám nhạt từ thiết kế gốc
-        border: Border(top: BorderSide(color: Colors.grey, width: 0.5)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          Icon(Icons.home, size: 30, color: Colors.blue),
-          Icon(Icons.bar_chart, size: 30, color: Colors.grey),
-          Icon(Icons.image, size: 30, color: Colors.grey),
-          Icon(Icons.send, size: 30, color: Colors.grey),
-          Icon(Icons.settings, size: 30, color: Colors.grey),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -231,11 +210,10 @@ class CheckInHistoryPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
-        // Title 'CHECK-IN'
-        title: const Text('CHECK-IN', style: TextStyle(color: Colors.grey)),
-        centerTitle: false,
       ),
 
       body: SingleChildScrollView(
@@ -287,8 +265,6 @@ class CheckInHistoryPage extends StatelessWidget {
           ),
         ),
       ),
-
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 }

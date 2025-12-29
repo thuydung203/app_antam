@@ -84,7 +84,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
   // Widget Helper cho các trường nhập liệu
   Widget _buildTextFieldRow({
     required String label,
-    required String placeholder,
+    String? placeholder,
     required TextEditingController controller,
     bool readOnly = false,
     Widget? suffixIcon,
@@ -186,22 +186,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                   // Quan hệ
                   _buildTextFieldRow(
                     label: 'Quan hệ:',
-                    placeholder: 'Bố/Mẹ',
                     controller: _relationshipController,
-                  ),
-                  // Ngày sinh
-                  _buildTextFieldRow(
-                    label: 'Ngày sinh:',
-                    placeholder: 'xx/yy/zzzz',
-                    controller: _dobController,
-                    readOnly: true,
-                    suffixIcon: const Icon(
-                      Icons.calendar_today,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    keyboardType: TextInputType.datetime,
-                    onTap: () => _selectDate(context), // Xử lý sự kiện onTap
                   ),
                   // Số tuổi
                   _buildTextFieldRow(
@@ -210,13 +195,6 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                     controller: _ageController,
                     keyboardType: TextInputType.number,
                     readOnly: true,
-                  ),
-                  // Tài khoản
-                  _buildTextFieldRow(
-                    label: 'Tài khoản:',
-                    placeholder: 'email',
-                    controller: _accountController,
-                    keyboardType: TextInputType.emailAddress,
                   ),
 
                   const SizedBox(height: 60),

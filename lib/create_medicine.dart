@@ -176,16 +176,6 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'CREATE MEDICINE',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 12,
-                        ), // Đã sửa màu chữ
-                      ),
-                      Icon(Icons.code, color: Colors.black), // Đã sửa màu icon
-                    ],
                   ),
                   const SizedBox(height: 10),
                   const Text.rich(

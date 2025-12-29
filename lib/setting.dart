@@ -11,13 +11,12 @@ class SettingPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {},
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
-        title: const Text(
-          "SETTING",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
-        ),
+        centerTitle: true,
       ),
 
       body: Padding(
@@ -32,13 +31,13 @@ class SettingPage extends StatelessWidget {
               children: const [
                 CircleAvatar(
                   radius: 35,
-                  backgroundColor: Colors.black12,
-                  child: Icon(Icons.person, size: 45, color: Colors.black54),
+                  backgroundColor: Color(0xFFFFC1A8),
+                  child: Icon(Icons.person, size: 45, color: Colors.white),
                 ),
                 SizedBox(width: 20),
                 Text(
                   "Nguyễn Văn A",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 )
               ],
             ),
@@ -50,47 +49,27 @@ class SettingPage extends StatelessWidget {
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  _buildMenuItem(Icons.info, "Thông tin tài khoản"),
-                  _buildMenuItem(Icons.lock, "Bảo mật"),
+                  _buildMenuItem(Icons.people_outline_outlined, "Ghép cặp"),
+                  _buildMenuItem(Icons.info_outline, "Thông tin tài khoản"),
+                  _buildMenuItem(Icons.lock_outline, "Bảo mật"),
                   _buildMenuItem(Icons.language, "Ngôn ngữ"),
-                  _buildMenuItem(Icons.notifications, "Thông báo"),
-                  _buildMenuItem(Icons.switch_account, "Đổi vai trò"),
-                  _buildMenuItem(Icons.logout, "Đăng xuất", showDivider: false),
+                  _buildMenuItem(Icons.notifications_none, "Thông báo"),
+                  _buildMenuItem(Icons.switch_account_outlined, "Đổi vai trò"),
+                  _buildMenuItem(Icons.logout, "Đăng xuất", showDivider: false, color: Colors.red),
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-
-      // Bottom Navigation
-      bottomNavigationBar: Container(
-        height: 65,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, -1)),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
-            Icon(Icons.home, size: 30),
-            Icon(Icons.bar_chart, size: 30),
-            Icon(Icons.image, size: 30),
-            Icon(Icons.navigation, size: 30),
-            Icon(Icons.settings, size: 30, color: Colors.blue),
           ],
         ),
       ),
@@ -98,26 +77,29 @@ class SettingPage extends StatelessWidget {
   }
 
   // Widget tạo 1 item của menu
-  Widget _buildMenuItem(IconData icon, String title, {bool showDivider = true}) {
+  Widget _buildMenuItem(IconData icon, String title, {bool showDivider = true, Color color = Colors.black87}) {
     return Column(
       children: [
-        Row(
-          children: [
-            Icon(icon, size: 26, color: Colors.black87),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Icon(icon, size: 26, color: color),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: color),
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right),
-          ],
+              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            ],
+          ),
         ),
         if (showDivider)
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1),
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1, thickness: 0.5),
           ),
       ],
     );

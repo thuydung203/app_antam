@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "387571810086",
+    "project_id": "antamapp-d3015",
+    "storage_bucket": "antamapp-d3015.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387571810086:android:42f3a213d312af23668be7",
+        "android_client_info": {
+          "package_name": "com.example.antam_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDR0bD67Uq4eqmvxcOAD__2VCnTh_FOxWY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
