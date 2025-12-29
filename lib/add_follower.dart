@@ -84,7 +84,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
   // Widget Helper cho các trường nhập liệu
   Widget _buildTextFieldRow({
     required String label,
-    required String placeholder,
+    String? placeholder,
     required TextEditingController controller,
     bool readOnly = false,
     Widget? suffixIcon,
@@ -186,24 +186,8 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                   // Quan hệ
                   _buildTextFieldRow(
                     label: 'Quan hệ:',
-                    placeholder: 'Bố/Mẹ',
                     controller: _relationshipController,
                   ),
-                  // Ngày sinh
-                  _buildTextFieldRow(
-                    label: 'Ngày sinh:',
-                    placeholder: 'dd/mm/yyyy',
-                    controller: _dobController, // ✅ BẮT BUỘC
-                    readOnly: true,
-                    keyboardType: TextInputType.datetime,
-                    suffixIcon: const Icon(
-                      Icons.calendar_today,
-                      color: Colors.grey,
-                      size: 20,
-                    ),
-                    onTap: () => _selectDate(context), // ✅ mở DatePicker
-                  ),
-
                   // Số tuổi
                   _buildTextFieldRow(
                     label: 'Số tuổi:',
@@ -211,13 +195,6 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                     controller: _ageController,
                     keyboardType: TextInputType.number,
                     readOnly: true,
-                  ),
-                  // Tài khoản
-                  _buildTextFieldRow(
-                    label: 'Tài khoản:',
-                    placeholder: 'email',
-                    controller: _accountController,
-                    keyboardType: TextInputType.emailAddress,
                   ),
 
                   const SizedBox(height: 60),
@@ -255,7 +232,6 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
-                const Icon(Icons.search, color: Colors.black, size: 30),
               ],
             ),
           ),

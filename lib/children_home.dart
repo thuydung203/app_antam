@@ -1,6 +1,7 @@
 import 'package:antam_app/check_in_history.dart';
 import 'package:antam_app/create_medicine.dart';
 import 'package:antam_app/create_checkup.dart';
+import 'package:antam_app/following.dart';
 import 'package:flutter/material.dart';
 
 class ChildrenHomePage extends StatefulWidget {
@@ -22,7 +23,12 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: (){
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const FollowPage()),
+            );
+          }
         ),
       ),
 

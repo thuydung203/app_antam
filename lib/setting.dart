@@ -16,10 +16,6 @@ class SettingPage extends StatelessWidget {
             Navigator.pop(context);
           },
         ),
-        title: const Text(
-          "SETTING",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
         centerTitle: true,
       ),
 
@@ -64,6 +60,7 @@ class SettingPage extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  _buildMenuItem(Icons.people_outline_outlined, "Ghép cặp"),
                   _buildMenuItem(Icons.info_outline, "Thông tin tài khoản"),
                   _buildMenuItem(Icons.lock_outline, "Bảo mật"),
                   _buildMenuItem(Icons.language, "Ngôn ngữ"),

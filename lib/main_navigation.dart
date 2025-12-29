@@ -15,19 +15,23 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  // Danh sách các màn hình tương ứng với các tab
+  // Sử dụng GlobalKey để quản lý Scaffold nếu cần
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Danh sách các màn hình
+  // Lưu ý: Các trang này nên được thiết kế để hiển thị bên trong một Scaffold khác
   final List<Widget> _pages = [
-    const ChildrenHomePage(), // Index 0
+    const ChildrenHomePage(), 
     const CheckInHistoryPage(),
-    const AddImage(), // Index 2
+    const AddImage(), 
     const GPSScreen(),
-    const SettingPage(), // Index 4
+    const SettingPage(), 
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack giúp giữ trạng thái của các trang khi chuyển tab (không bị reload lại)
+      key: _scaffoldKey,
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
