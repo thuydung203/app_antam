@@ -27,7 +27,7 @@ class _LoadingPageState extends State<LoadingPage> {
     String? role = prefs.getString("role"); // 'child' hoặc 'parent'
 
     // Chờ 2 giây để hiển thị loading
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(Duration(seconds: 1));
 
     // LẦN ĐẦU: CHƯA LOGIN → chuyển Login Page
     if (!isLoggedIn) {

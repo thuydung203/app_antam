@@ -15,7 +15,6 @@ import 'signup.dart';
 import 'roleselection.dart';
 import 'following.dart';
 import 'children_home.dart';
-import 'package:provider/provider.dart';
 import 'firebase_options.dart'; // File do flutterfire sinh ra
 
 

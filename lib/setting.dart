@@ -1,40 +1,28 @@
 import 'package:flutter/material.dart';
-// Đảm bảo các đường dẫn import này đúng với cấu trúc project của bạn
-import 'package:antam_app/children_home.dart';
-import 'package:antam_app/check_in_history.dart';
-import 'package:antam_app/add_images.dart';
 
-class SettingPage extends StatefulWidget {
+class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
-
-  @override
-  State<SettingPage> createState() => _SettingPageState();
-}
-
-class _SettingPageState extends State<SettingPage> {
-  // Ở trang Setting, index đang hoạt động là 4
-  final int _currentIndex = 4;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfffdf7f7),
-
-      // ===== APP BAR =====
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
         title: const Text(
           "SETTING",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w500),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
+        centerTitle: true,
       ),
 
-      // ===== BODY =====
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
@@ -43,18 +31,18 @@ class _SettingPageState extends State<SettingPage> {
             const SizedBox(height: 20),
 
             // Avatar + Name
-            const Row(
-              children: [
+            Row(
+              children: const [
                 CircleAvatar(
                   radius: 35,
-                  backgroundColor: Colors.black12,
-                  child: Icon(Icons.person, size: 45, color: Colors.black54),
+                  backgroundColor: Color(0xFFFFC1A8),
+                  child: Icon(Icons.person, size: 45, color: Colors.white),
                 ),
                 SizedBox(width: 20),
                 Text(
                   "Nguyễn Văn A",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                )
               ],
             ),
 
@@ -65,127 +53,58 @@ class _SettingPageState extends State<SettingPage> {
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 8,
-                    offset: Offset(0, 3),
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               child: Column(
                 children: [
-                  _buildMenuItem(Icons.info, "Thông tin tài khoản"),
-                  _buildMenuItem(Icons.lock, "Bảo mật"),
+                  _buildMenuItem(Icons.info_outline, "Thông tin tài khoản"),
+                  _buildMenuItem(Icons.lock_outline, "Bảo mật"),
                   _buildMenuItem(Icons.language, "Ngôn ngữ"),
-                  _buildMenuItem(Icons.notifications, "Thông báo"),
-                  _buildMenuItem(Icons.switch_account, "Đổi vai trò"),
-                  _buildMenuItem(Icons.logout, "Đăng xuất", showDivider: false),
+                  _buildMenuItem(Icons.notifications_none, "Thông báo"),
+                  _buildMenuItem(Icons.switch_account_outlined, "Đổi vai trò"),
+                  _buildMenuItem(Icons.logout, "Đăng xuất", showDivider: false, color: Colors.red),
                 ],
               ),
             ),
           ],
         ),
       ),
-
-      // ===== BOTTOM NAV (Đồng bộ với các trang khác) =====
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == _currentIndex) return;
-
-          switch (index) {
-            case 0:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ChildrenHomePage(),
-                ),
-              );
-              break;
-            case 1:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CheckInHistoryPage(),
-                ),
-              );
-              break;
-            case 2:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const AddImage()),
-              );
-              break;
-            case 3:
-              debugPrint("Chuyển hướng sang trang GPS/Định vị");
-              break;
-            case 4:
-              // Đang ở trang Setting
-              break;
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        backgroundColor: Colors.white,
-        elevation: 10,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: ''),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart, size: 28),
-            label: '',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.image, size: 28), label: ''),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.navigation, size: 28),
-            label: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings, size: 28),
-            label: '',
-          ),
-        ],
-      ),
     );
   }
 
   // Widget tạo 1 item của menu
-  Widget _buildMenuItem(
-    IconData icon,
-    String title, {
-    bool showDivider = true,
-  }) {
-    return InkWell(
-      onTap: () => debugPrint("Nhấn vào $title"),
-      child: Column(
-        children: [
-          Row(
+  Widget _buildMenuItem(IconData icon, String title, {bool showDivider = true, Color color = Colors.black87}) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
             children: [
-              Icon(icon, size: 26, color: Colors.black87),
+              Icon(icon, size: 26, color: color),
               const SizedBox(width: 15),
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: color),
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
+              Icon(Icons.chevron_right, color: Colors.grey.shade400),
             ],
           ),
-          if (showDivider)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, thickness: 0.5),
-            ),
-        ],
-      ),
+        ),
+        if (showDivider)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Divider(height: 1, thickness: 0.5),
+          ),
+      ],
     );
   }
 }

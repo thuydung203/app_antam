@@ -1,5 +1,4 @@
-import 'package:antam_app/children_home.dart';
-import 'package:antam_app/following.dart';
+import 'package:antam_app/main_navigation.dart';
 import 'package:antam_app/parent_home.dart';
 import 'package:flutter/material.dart';
 
@@ -22,18 +21,13 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
         child: Column(
           children: [
             const SizedBox(height: 40),
-
-            Image.asset("assets/images/logo_removeBG.png", width: 500),
-
+            Image.asset("assets/images/logo_removeBG.png", width: 500, errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 100)),
             const SizedBox(height: 20),
-
             const Text(
               "CHỌN VAI TRÒ",
               style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
-
             const SizedBox(height: 50),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -56,7 +50,6 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     );
   }
 
-  // ===== BUTTON CÓ HIỆU ỨNG SCALE =====
   Widget _buildAnimatedRoleButton({
     required String image,
     required String title,
@@ -68,7 +61,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
     return Column(
       children: [
         AnimatedScale(
-          scale: isPressed ? 1.08 : 1.0, // hiệu ứng phóng to
+          scale: isPressed ? 1.08 : 1.0,
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOut,
           child: SizedBox(
@@ -82,26 +75,22 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
 
                 await Future.delayed(const Duration(milliseconds: 120));
 
+                if (!mounted) return;
+
                 setState(() {
                   pressedRole = "";
                   selectedRole = value;
                 });
 
-                debugPrint("Đã chọn vai trò: $value");
-
                 if (value == "child") {
-                  Navigator.push(
+                  Navigator.push( // Sử dụng push để có thể quay lại
                     context,
-                    MaterialPageRoute(
-                        builder: (context) => const FollowPage ()),
+                    MaterialPageRoute(builder: (context) => const MainNavigation()),
                   );
-                }
-
-                if (value == "parent") {
-                  Navigator.push(
+                } else if (value == "parent") {
+                  Navigator.push( // Sử dụng push để có thể quay lại
                     context,
-                      MaterialPageRoute(
-                          builder: (context) => const ParentHomePage()),
+                    MaterialPageRoute(builder: (context) => const ParentHomePage()),
                   );
                 }
               },
@@ -119,13 +108,11 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                   ),
                 ),
               ),
-              child: Image.asset(image, fit: BoxFit.contain),
+              child: Image.asset(image, fit: BoxFit.contain, errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 50)),
             ),
           ),
         ),
-
         const SizedBox(height: 10),
-
         Text(
           title,
           style: const TextStyle(

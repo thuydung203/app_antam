@@ -18,17 +18,6 @@ class _AddImageState extends State<AddImage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
-
-      // ===== APP BAR =====
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-
       body: SafeArea(
         child: Column(
           children: [
@@ -50,17 +39,17 @@ class _AddImageState extends State<AddImage> {
                       child: Image.asset(
                         'assets/images/parent.png',
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.person, size: 50),
                       ),
                     ),
                   ),
+
                   const SizedBox(width: 12),
+
                   // Name + Age
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      children: const [
                         Text(
                           'Bố: Nguyễn Văn A',
                           style: TextStyle(
@@ -71,11 +60,15 @@ class _AddImageState extends State<AddImage> {
                         SizedBox(height: 2),
                         Text(
                           'Tuổi: 80',
-                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black54,
+                          ),
                         ),
                       ],
                     ),
                   ),
+
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -84,9 +77,7 @@ class _AddImageState extends State<AddImage> {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade200,
                               borderRadius: BorderRadius.circular(12),
@@ -145,7 +136,9 @@ class _AddImageState extends State<AddImage> {
 
             // ===== ADD IMAGE BUTTON =====
             GestureDetector(
-              onTap: () => debugPrint('Thêm ảnh'),
+              onTap: () {
+                debugPrint('Thêm ảnh');
+              },
               child: Container(
                 width: 52,
                 height: 52,
@@ -164,74 +157,54 @@ class _AddImageState extends State<AddImage> {
               ),
             ),
 
-            // ===== FOOTER INFO =====
+            const Spacer(),
+
+            // ===== FOOTER =====
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Text(
                 '23 ảnh, 4 video\nDo Nguyễn Văn B tạo',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.black54, fontSize: 12),
+                style: TextStyle(
+                  color: Colors.black54,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
 
-      // ===== BOTTOM NAV (Đã đồng bộ với Home và Check-in) =====
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          if (index == _currentIndex) return;
+// ===== NAV ICON =====
+class _NavIcon extends StatelessWidget {
+  final IconData icon;
+  final bool active;
 
-          switch (index) {
-            case 0:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ChildrenHomePage(),
-                ),
-              );
-              break;
-            case 1:
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CheckInHistoryPage(),
-                ),
-              );
-              break;
-            case 2:
-              // Đang ở trang ảnh
-              break;
-            case 3:
-              debugPrint("Sang tin nhắn");
-              break;
-            case 4:
-              debugPrint("Sang cài đặt");
-              break;
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        backgroundColor: Colors.white,
-        elevation: 10,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: ''),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart, size: 28),
-            label: '',
+  const _NavIcon({
+    required this.icon,
+    required this.active,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: active ? Colors.blue : Colors.black54),
+        const SizedBox(height: 4),
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: active ? Colors.blue : Colors.transparent,
+            shape: BoxShape.circle,
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.image, size: 28), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.send, size: 28), label: ''),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings, size: 28),
-            label: '',
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

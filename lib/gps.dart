@@ -30,21 +30,6 @@ class GPSScreen extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      // 1. AppBar
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1, 
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {},
-        ),
-        title: const Text(
-          'GPS',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.normal),
-        ),
-        centerTitle: false,
-      ),
-      
       // 2. Body
       body: Column(
         children: <Widget>[
@@ -93,7 +78,7 @@ class GPSScreen extends StatelessWidget {
                             // Nút 1: Truy cập (Khối màu xám trống)
                             Expanded(
                               child: Container(
-                                height: 60, 
+                                height: 100,
                                 decoration: BoxDecoration(
                                   color: Colors.grey[200],
                                   borderRadius: BorderRadius.circular(8),
@@ -104,6 +89,7 @@ class GPSScreen extends StatelessWidget {
                             // Nút 2: Chỉ đường
                             Expanded(
                               child: Container(
+                                height: 100,
                                 padding: const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
                                   color: Colors.grey[200], 
@@ -131,6 +117,7 @@ class GPSScreen extends StatelessWidget {
                         
                         // Phần Thông báo
                         Container(
+                          height: 100,
                           padding: const EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
                             color: Colors.grey[200], 
@@ -155,43 +142,6 @@ class GPSScreen extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-          
-          // 3. Bottom Navigation Bar
-          BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            // Đặt màu icon đang chọn là màu xanh dương
-            selectedItemColor: Colors.blue[600], 
-            unselectedItemColor: Colors.grey, 
-            showSelectedLabels: false,
-            showUnselectedLabels: false,
-            items: const <BottomNavigationBarItem>[
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.bar_chart),
-                label: 'Statistics',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.photo_library),
-                label: 'Gallery',
-              ),
-              BottomNavigationBarItem(
-                // Icon định vị (sử dụng Icons.send để có hình mũi tên gần nhất)
-                icon: Icon(Icons.send), 
-                label: 'Location',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings),
-                label: 'Settings',
-              ),
-            ],
-            // Index 3 (icon định vị) được chọn
-            currentIndex: 3, 
-            onTap: (index) {},
           ),
         ],
       ),
