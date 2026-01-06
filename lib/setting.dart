@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:antam_app/setting_account_info_page.dart';
 import 'package:flutter/material.dart';
 import 'package:antam_app/setting_account_security_page.dart';
 import 'package:antam_app/setting_language_page.dart';
 import 'package:antam_app/notification_setting_page.dart';
+import 'package:antam_app/roleselection.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
@@ -57,7 +57,7 @@ class SettingPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -105,12 +105,22 @@ class SettingPage extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                               builder: (context) => const NotificationPage()),
-                        ),
-                  _buildMenuItem(icon: Icons.switch_account_outlined, title: "Đổi vai trò"),
+                          );
+                      }
+                  ),
+                  _buildMenuItem(
+                      icon: Icons.switch_account_outlined,
+                      title: "Đổi vai trò",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const RoleSelectionPage()),
+                        );
+                      }),
                   _buildMenuItem(
                     icon: Icons.logout, 
                     title: "Đăng xuất", 
-                    showDivider: false, 
                     color: Colors.red
                   ),
                 ],
@@ -126,7 +136,6 @@ class SettingPage extends StatelessWidget {
   Widget _buildMenuItem({
     required IconData icon, 
     required String title, 
-    bool showDivider = true, 
     Color color = Colors.black87,
     VoidCallback? onTap,
   }) {
@@ -152,11 +161,6 @@ class SettingPage extends StatelessWidget {
             ),
           ),
         ),
-        if (showDivider)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(height: 1, thickness: 0.5),
-          ),
       ],
     );
   }

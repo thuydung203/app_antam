@@ -242,7 +242,7 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Nhập mã ghép nối của đối tác bạn", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          const Text("Nhập mã đối tác", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 15),
           TextField(
             controller: _inputController,

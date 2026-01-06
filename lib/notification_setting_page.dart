@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class NotificationSettingPage extends StatefulWidget {
-  const NotificationSettingPage({super.key});
+class NotificationPage extends StatefulWidget {
+  const NotificationPage({super.key});
 
   @override
-  State<NotificationSettingPage> createState() => _NotificationSettingPageState();
+  State<NotificationPage> createState() => _NotificationSettingPageState();
 }
 
-class _NotificationSettingPageState extends State<NotificationSettingPage> {
+class _NotificationSettingPageState extends State<NotificationPage> {
   // Trạng thái (state) của các nút bật/tắt
   bool _isNotificationEnabled = true;
   bool _isNotificationAndVibrationEnabled = true;
