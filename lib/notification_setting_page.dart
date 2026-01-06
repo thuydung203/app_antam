@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class NotificationSettingPage extends StatefulWidget {
-  const NotificationSettingPage({super.key});
+class NotificationPage extends StatefulWidget {
+  const NotificationPage({super.key});
 
   @override
-  State<NotificationSettingPage> createState() => _NotificationSettingPageState();
+  State<NotificationPage> createState() => _NotificationSettingPageState();
 }
 
-class _NotificationSettingPageState extends State<NotificationSettingPage> {
+class _NotificationSettingPageState extends State<NotificationPage> {
   // Trạng thái (state) của các nút bật/tắt
   bool _isNotificationEnabled = true;
   bool _isNotificationAndVibrationEnabled = true;
@@ -54,7 +54,7 @@ class _NotificationSettingPageState extends State<NotificationSettingPage> {
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     spreadRadius: 1,
                     blurRadius: 5,
                     offset: const Offset(0, 3), 
@@ -107,7 +107,7 @@ class _NotificationSettingPageState extends State<NotificationSettingPage> {
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
+                    color: Colors.grey.withValues(alpha: 0.1),
                     spreadRadius: 1,
                     blurRadius: 5,
                     offset: const Offset(0, 3),
@@ -169,7 +169,7 @@ class _NotificationSettingPageState extends State<NotificationSettingPage> {
       ),
       value: value,
       onChanged: onChanged,
-      activeColor: Colors.blue, // Màu xanh dương cho nút bật
+      activeThumbColor: Colors.blue, // Màu xanh dương cho nút bật
       // Bỏ qua padding mặc định để kiểm soát lề tốt hơn
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0), 
     );

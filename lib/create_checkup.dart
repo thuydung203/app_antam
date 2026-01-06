@@ -5,7 +5,7 @@ import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
 
 class CreateCheckupPage extends StatefulWidget {
-  const CreateCheckupPage({Key? key}) : super(key: key);
+  const CreateCheckupPage({super.key});
 
   @override
   State<CreateCheckupPage> createState() => _CreateCheckupPageState();
@@ -15,7 +15,7 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
   // 1. Dữ liệu trạng thái cần lưu
   // KEY để quản lý và xác thực Form
   final _formKey = GlobalKey<FormState>();
-  TextEditingController _checkupNameController = TextEditingController();
+  final TextEditingController _checkupNameController = TextEditingController();
   TimeOfDay _selectedTime = TimeOfDay.now();
   DateTime _selectedDate = DateTime.now();
 
@@ -50,18 +50,18 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
 
       try {
         await DatabaseService().addCheckup(newCheckup);
-         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             const SnackBar(content: Text('Đã thêm lịch tái khám')),
-           );
-           Navigator.of(context).pop();
-         }
+        if (!mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Đã thêm lịch tái khám')),
+        );
+        Navigator.of(context).pop();
       } catch (e) {
-         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Lỗi: $e')),
-           );
-         }
+        if (!mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
       }
     } else {
       // Form không hợp lệ
@@ -245,7 +245,7 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
                         decoration: InputDecoration(
                           hintText: 'Nhập lịch hẹn...',
                           hintStyle: TextStyle(
-                            color: Colors.black.withOpacity(0.5),
+                            color: Colors.black.withValues(alpha: 0.5),
                           ),
                           filled: true,
                           fillColor: const Color(0xFFFFCEBF),
@@ -291,14 +291,14 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
                                     _formattedDate,
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: Colors.black.withOpacity(0.4),
+                                      color: Colors.black.withValues(alpha: 0.4),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Icon(
                                     Icons.calendar_today,
                                     size: 18,
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: 0.3),
                                   ),
                                 ],
                               ),
@@ -306,7 +306,7 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
                           ),
                         ),
                       ),
-                      Divider(color: Colors.black.withOpacity(0.2)),
+                      Divider(color: Colors.black.withValues(alpha: 0.2)),
 
                       // Chọn Giờ (Picker)
                       InkWell(
@@ -336,7 +336,7 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
                                   Icon(
                                     Icons.access_time,
                                     size: 20,
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: 0.3),
                                   ),
                                 ],
                               ),
@@ -344,7 +344,7 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
                           ),
                         ),
                       ),
-                      Divider(color: Colors.black.withOpacity(0.2)),
+                      Divider(color: Colors.black.withValues(alpha: 0.2)),
 
                       const SizedBox(height: 10),
                     ],

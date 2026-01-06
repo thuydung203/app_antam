@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:antam_app/children_home.dart';
-import 'package:antam_app/check_in_history.dart';
 
 class AddImage extends StatefulWidget {
   const AddImage({super.key});
@@ -11,7 +9,6 @@ class AddImage extends StatefulWidget {
 
 class _AddImageState extends State<AddImage> {
   // Ở trang Ảnh, index đang hoạt động là 2 (Icon Image/Photo)
-  final int _currentIndex = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -178,32 +175,3 @@ class _AddImageState extends State<AddImage> {
 }
 
 // ===== NAV ICON =====
-class _NavIcon extends StatelessWidget {
-  final IconData icon;
-  final bool active;
-
-  const _NavIcon({
-    required this.icon,
-    required this.active,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: active ? Colors.blue : Colors.black54),
-        const SizedBox(height: 4),
-        Container(
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: active ? Colors.blue : Colors.transparent,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ],
-    );
-  }
-}

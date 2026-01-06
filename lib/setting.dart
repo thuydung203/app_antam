@@ -1,4 +1,9 @@
+import 'package:antam_app/setting_account_info_page.dart';
 import 'package:flutter/material.dart';
+import 'package:antam_app/setting_account_security_page.dart';
+import 'package:antam_app/setting_language_page.dart';
+import 'package:antam_app/notification_setting_page.dart';
+import 'package:antam_app/roleselection.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
@@ -52,7 +57,7 @@ class SettingPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -60,13 +65,64 @@ class SettingPage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _buildMenuItem(Icons.people_outline_outlined, "Ghép cặp"),
-                  _buildMenuItem(Icons.info_outline, "Thông tin tài khoản"),
-                  _buildMenuItem(Icons.lock_outline, "Bảo mật"),
-                  _buildMenuItem(Icons.language, "Ngôn ngữ"),
-                  _buildMenuItem(Icons.notifications_none, "Thông báo"),
-                  _buildMenuItem(Icons.switch_account_outlined, "Đổi vai trò"),
-                  _buildMenuItem(Icons.logout, "Đăng xuất", showDivider: false, color: Colors.red),
+                  _buildMenuItem(
+                    icon: Icons.info_outline, 
+                    title: "Thông tin tài khoản",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AccountInfoPage()),
+                      );
+                    },
+                  ),
+                  _buildMenuItem(
+                      icon: Icons.lock_outline,
+                      title: "Bảo mật",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const SecurityPage()),
+                        );
+                      }
+                  ),
+                  _buildMenuItem(
+                      icon: Icons.language,
+                      title: "Ngôn ngữ",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LanguagePage()),
+                        );
+                      }
+                  ),
+                  _buildMenuItem(
+                      icon: Icons.notifications_none,
+                      title: "Thông báo",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const NotificationPage()),
+                          );
+                      }
+                  ),
+                  _buildMenuItem(
+                      icon: Icons.switch_account_outlined,
+                      title: "Đổi vai trò",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const RoleSelectionPage()),
+                        );
+                      }),
+                  _buildMenuItem(
+                    icon: Icons.logout, 
+                    title: "Đăng xuất", 
+                    color: Colors.red
+                  ),
                 ],
               ),
             ),
@@ -77,30 +133,34 @@ class SettingPage extends StatelessWidget {
   }
 
   // Widget tạo 1 item của menu
-  Widget _buildMenuItem(IconData icon, String title, {bool showDivider = true, Color color = Colors.black87}) {
+  Widget _buildMenuItem({
+    required IconData icon, 
+    required String title, 
+    Color color = Colors.black87,
+    VoidCallback? onTap,
+  }) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Icon(icon, size: 26, color: color),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: color),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(icon, size: 26, color: color),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: color),
+                  ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
-            ],
+                Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              ],
+            ),
           ),
         ),
-        if (showDivider)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Divider(height: 1, thickness: 0.5),
-          ),
       ],
     );
   }

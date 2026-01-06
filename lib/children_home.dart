@@ -1,3 +1,4 @@
+import 'package:antam_app/settings_page.dart';
 import 'package:antam_app/check_in_history.dart';
 import 'package:antam_app/create_medicine.dart';
 import 'package:antam_app/create_checkup.dart';
@@ -12,7 +13,7 @@ import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
 
 class ChildrenHomePage extends StatefulWidget {
-  const ChildrenHomePage({Key? key}) : super(key: key);
+  const ChildrenHomePage({super.key});
 
   @override
   State<ChildrenHomePage> createState() => _ChildrenHomePageState();
@@ -220,20 +221,21 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
           const Spacer(),
           PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'logout') {
-                Provider.of<AuthProvider>(context, listen: false).signOut();
-                // AuthWrapper will handle the rest
-                Navigator.of(context).popUntil((route) => route.isFirst);
+              if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
               }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'logout',
+                value: 'settings',
                 child: Row(
                   children: [
-                     Icon(Icons.logout, color: Colors.black54),
+                     Icon(Icons.settings, color: Colors.black54),
                      SizedBox(width: 8),
-                     Text("Đăng xuất"),
+                     Text("Cài đặt"),
                   ],
                 ),
               )

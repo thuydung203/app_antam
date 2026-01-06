@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-class SettingSecurityLoginPage extends StatefulWidget {
-  const SettingSecurityLoginPage({super.key});
+class SecurityPage extends StatefulWidget {
+  const SecurityPage({super.key});
 
   @override
-  State<SettingSecurityLoginPage> createState() =>
+  State<SecurityPage> createState() =>
       _SettingSecurityLoginPageState();
 }
 
-class _SettingSecurityLoginPageState extends State<SettingSecurityLoginPage> {
+class _SettingSecurityLoginPageState extends State<SecurityPage> {
   // Trạng thái các Switch
   bool isChangePassword = true;
   bool isBiometricLogin = false;

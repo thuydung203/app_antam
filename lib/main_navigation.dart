@@ -1,7 +1,7 @@
 import 'package:antam_app/add_images.dart';
-import 'package:antam_app/check_in_history.dart';
 import 'package:antam_app/children_home.dart';
 import 'package:antam_app/gps.dart';
+import 'package:antam_app/paring.dart';
 import 'package:antam_app/setting.dart';
 import 'package:flutter/material.dart';
 
@@ -21,11 +21,11 @@ class _MainNavigationState extends State<MainNavigation> {
   // Danh sách các màn hình
   // Lưu ý: Các trang này nên được thiết kế để hiển thị bên trong một Scaffold khác
   final List<Widget> _pages = [
-    const ChildrenHomePage(), 
-    const CheckInHistoryPage(),
+    const ChildrenHomePage(),
     const AddImage(), 
     const GPSScreen(),
-    const SettingPage(), 
+    const PairingExpiredPage(),
+    const SettingPage(),
   ];
 
   @override
@@ -50,9 +50,9 @@ class _MainNavigationState extends State<MainNavigation> {
         showUnselectedLabels: false,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home, size: 30), label: ''),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.image), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.send), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.people_outline_outlined,size: 30,), label: ''),
           BottomNavigationBarItem(icon: Icon(Icons.settings, size: 30), label: ''),
         ],
       ),

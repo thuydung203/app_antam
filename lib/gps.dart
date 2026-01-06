@@ -38,7 +38,7 @@ class GPSScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Container(
+                  SizedBox(
                     height: screenWidth * 1.2, 
                     width: screenWidth,
                     // Container giả lập khu vực bản đồ
