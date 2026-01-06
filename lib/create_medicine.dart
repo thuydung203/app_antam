@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'models/medicine_model.dart';
+import 'providers/auth_provider.dart';
+import 'services/database_service.dart';
 
 class CreateMedicinePage extends StatefulWidget {
   const CreateMedicinePage({Key? key}) : super(key: key);
@@ -244,12 +248,50 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
 
                         // Nút XÁC NHẬN (V)
                         InkWell(
-                          onTap: () {
-                            // Xử lý sự kiện Xác nhận/Lưu
-                            debugPrint(
-                              'Xác nhận tạo lịch uống thuốc: ${_medicineNameController.text}',
+                          onTap: () async {
+                            final name = _medicineNameController.text.trim();
+                            if (name.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Vui lòng nhập tên thuốc')),
+                              );
+                              return;
+                            }
+
+                            final user = Provider.of<AuthProvider>(context, listen: false).firebaseUser;
+                            if (user == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Vui lòng đăng nhập lại')),
+                              );
+                              return;
+                            }
+
+                            // Tạo model
+                            final newMedicine = MedicineModel(
+                                id: '', 
+                                name: name,
+                                dosage: '1 viên', 
+                                time: TimeOfDayModel(hour: _selectedTime.hour, minute: _selectedTime.minute),
+                                userId: user.uid,
+                                repeatDays: _selectedDays,
+                                sound: _selectedSound
                             );
-                            // Thêm logic lưu dữ liệu ở đây
+
+                            // Lưu vào DB
+                            try {
+                              await DatabaseService().addMedicine(newMedicine);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Đã thêm lịch uống thuốc')),
+                                );
+                                Navigator.pop(context);
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Lỗi: $e')),
+                                );
+                              }
+                            }
                           },
                           borderRadius: BorderRadius.circular(50),
                           child: const Padding(

@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'antamapp-d3015.firebasestorage.app',
     measurementId: 'G-78NWMJ7E7J',
   );
+
 }

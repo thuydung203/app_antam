@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'models/checkup_model.dart';
+import 'providers/auth_provider.dart';
+import 'services/database_service.dart';
 
 class CreateCheckupPage extends StatefulWidget {
   const CreateCheckupPage({Key? key}) : super(key: key);
@@ -16,22 +20,52 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
   DateTime _selectedDate = DateTime.now();
 
   // Hàm xử lý khi nhấn nút XÁC NHẬN
-  void _submitForm() {
+  Future<void> _submitForm() async {
     // Kích hoạt validation
     if (_formKey.currentState!.validate()) {
-      // Form hợp lệ, tiến hành lưu dữ liệu
-      debugPrint('Lịch hẹn đã được xác nhận và lưu:');
-      debugPrint('Tên: ${_checkupNameController.text}');
-      debugPrint('Ngày: $_formattedDate');
-      debugPrint('Giờ: ${_selectedTime.format(context)}');
+      final user = Provider.of<AuthProvider>(context, listen: false).firebaseUser;
+      if (user == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Vui lòng đăng nhập lại')),
+          );
+          return;
+      }
 
-      // Thêm logic lưu dữ liệu vào database/state management ở đây
+      // Tạo Combined DateTime từ Date và Time đã chọn
+      final checkupDate = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        _selectedTime.hour,
+        _selectedTime.minute,
+      );
 
-      // Đóng màn hình sau khi lưu thành công (tùy chọn)
-      Navigator.of(context).pop();
+      final newCheckup = CheckupModel(
+        id: '', 
+        hospitalName: _checkupNameController.text.trim(),
+        date: checkupDate,
+        result: '', // Mặc định rỗng
+        userId: user.uid,
+      );
+
+      try {
+        await DatabaseService().addCheckup(newCheckup);
+         if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Đã thêm lịch tái khám')),
+           );
+           Navigator.of(context).pop();
+         }
+      } catch (e) {
+         if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text('Lỗi: $e')),
+           );
+         }
+      }
     } else {
-      // Form không hợp lệ, hiển thị lỗi
-      debugPrint('Vui lòng điền đầy đủ thông tin Tên lịch hẹn.');
+      // Form không hợp lệ
+      debugPrint('Vui lòng điền đầy đủ thông tin.');
     }
   }
 
