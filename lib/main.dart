@@ -1,5 +1,6 @@
 import 'package:antam_app/roleselection.dart';
 import 'package:antam_app/login.dart';
+import 'package:antam_app/signup.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: const AuthWrapper(),
+        home: const SignUpPage(),
       ),
     );
   }
