@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
 
 import 'signup.dart';
 import 'roleselection.dart';
@@ -66,10 +68,8 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      // Sử dụng AuthProvider để đăng nhập
+      await Provider.of<AuthProvider>(context, listen: false).signIn(email, password);
 
       if (!mounted) return;
 

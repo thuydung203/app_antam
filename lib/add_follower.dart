@@ -45,41 +45,6 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _accountController = TextEditingController();
 
-  // Hàm hiển thị Date Picker
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      helpText: 'Chọn Ngày Sinh',
-      cancelText: 'Hủy',
-      confirmText: 'Chọn',
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: _buttonColor, // Màu chủ đạo của picker
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        // Cập nhật trường Ngày sinh
-        _dobController.text =
-            "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
-        // Tính toán và cập nhật trường Tuổi (giả định)
-        final int age = DateTime.now().year - picked.year;
-        _ageController.text = age.toString();
-      });
-    }
-  }
 
   // Widget Helper cho các trường nhập liệu
   Widget _buildTextFieldRow({
@@ -114,7 +79,7 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
             child: Container(
               height: 52,
               decoration: BoxDecoration(
-                color: const Color(0x49B2A5A5).withOpacity(0.3),
+                color: const Color(0x49B2A5A5).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(10),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 15),

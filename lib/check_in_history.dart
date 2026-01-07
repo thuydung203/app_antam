@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CheckInHistoryPage extends StatelessWidget {
-  const CheckInHistoryPage({Key? key}) : super(key: key);
+  const CheckInHistoryPage({super.key});
 
   // Widget riêng để xây dựng từng ô ngày trong lịch
   Widget _buildDayCell(String day, bool isChecked) {

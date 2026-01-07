@@ -13,7 +13,7 @@ class AddImage extends StatefulWidget {
 class _AddImageState extends State<AddImage> {
   bool _isSelectionMode = false; // Trạng thái chọn ảnh
   final Set<int> _selectedIndexes = {}; // Lưu trữ index các ảnh được chọn
-  
+
   // Danh sách ảnh thực tế sử dụng XFile từ image_picker
   List<XFile> _images = [];
   final ImagePicker _picker = ImagePicker();
@@ -53,19 +53,19 @@ class _AddImageState extends State<AddImage> {
   // Xử lý xóa các ảnh đã chọn và cập nhật danh sách
   void _deleteSelected() {
     if (_selectedIndexes.isEmpty) return;
-    
+
     setState(() {
       // Sắp xếp index từ lớn đến bé để xóa chính xác
       List<int> sortedIndices = _selectedIndexes.toList()..sort((a, b) => b.compareTo(a));
-      
+
       for (var index in sortedIndices) {
         _images.removeAt(index);
       }
-      
+
       _selectedIndexes.clear();
       _isSelectionMode = false;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Đã xóa các ảnh thành công')),
     );
@@ -135,17 +135,17 @@ class _AddImageState extends State<AddImage> {
                             color: Colors.black54,
                           ),
                         ),
-                        
+
                         // HÀNG NÚT ĐIỀU KHIỂN
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
-                          children: _isSelectionMode 
+                          children: _isSelectionMode
                             ? [
                                 // Nút Xóa (Thùng rác)
                                 IconButton(
                                   onPressed: _selectedIndexes.isEmpty ? null : _deleteSelected,
                                   icon: Icon(
-                                    Icons.delete_outline, 
+                                    Icons.delete_outline,
                                     color: _selectedIndexes.isEmpty ? Colors.grey : Colors.red,
                                     size: 28,
                                   ),
@@ -197,7 +197,7 @@ class _AddImageState extends State<AddImage> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _images.isEmpty 
+                child: _images.isEmpty
                   ? const Center(child: Text("Album trống. Nhấn + để thêm ảnh."))
                   : GridView.builder(
                   itemCount: _images.length,
@@ -208,7 +208,7 @@ class _AddImageState extends State<AddImage> {
                   ),
                   itemBuilder: (context, index) {
                     bool isSelected = _selectedIndexes.contains(index);
-                    
+
                     return GestureDetector(
                       onTap: () {
                         if (_isSelectionMode) {
@@ -221,7 +221,7 @@ class _AddImageState extends State<AddImage> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
-                              border: isSelected 
+                              border: isSelected
                                 ? Border.all(color: Colors.blue, width: 3)
                                 : null,
                             ),
@@ -282,7 +282,7 @@ class _AddImageState extends State<AddImage> {
 
             // ===== FOOTER =====
             Text(
-              _isSelectionMode 
+              _isSelectionMode
                 ? 'Đã chọn ${_selectedIndexes.length} mục'
                 : '${_images.length} ảnh, 4 video\nDo Nguyễn Văn B tạo',
               textAlign: TextAlign.center,
@@ -298,3 +298,5 @@ class _AddImageState extends State<AddImage> {
     );
   }
 }
+
+

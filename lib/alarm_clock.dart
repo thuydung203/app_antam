@@ -43,7 +43,7 @@ class AlarmClockPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center, 
             children: <Widget>[
               // --- 1. Khu vực Đồng hồ mô phỏng ---
-              Container(
+              SizedBox(
                 width: size.width * 0.5,
                 height: size.width * 0.5,
                 // Sử dụng CustomPaint để vẽ hình đồng hồ mô phỏng

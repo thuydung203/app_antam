@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'models/medicine_model.dart';
+import 'providers/auth_provider.dart';
+import 'services/database_service.dart';
 
 class CreateMedicinePage extends StatefulWidget {
-  const CreateMedicinePage({Key? key}) : super(key: key);
+  const CreateMedicinePage({super.key});
 
   @override
   State<CreateMedicinePage> createState() => _CreateMedicinePageState();
@@ -9,10 +13,10 @@ class CreateMedicinePage extends StatefulWidget {
 
 class _CreateMedicinePageState extends State<CreateMedicinePage> {
   // 1. Dữ liệu trạng thái cần lưu
-  TextEditingController _medicineNameController = TextEditingController();
+  final TextEditingController _medicineNameController = TextEditingController();
   TimeOfDay _selectedTime = TimeOfDay.now();
   DateTime _selectedDate = DateTime.now();
-  List<String> _selectedDays = [
+  final List<String> _selectedDays = [
     'T2',
     'T3',
     'T4',
@@ -119,7 +123,9 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
               return RadioListTile<String>(
                 title: Text(sound),
                 value: sound,
+                // ignore: deprecated_member_use
                 groupValue: _selectedSound,
+                // ignore: deprecated_member_use
                 onChanged: (String? value) {
                   if (value != null) {
                     setState(() {
@@ -244,12 +250,50 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
 
                         // Nút XÁC NHẬN (V)
                         InkWell(
-                          onTap: () {
-                            // Xử lý sự kiện Xác nhận/Lưu
-                            debugPrint(
-                              'Xác nhận tạo lịch uống thuốc: ${_medicineNameController.text}',
+                          onTap: () async {
+                            final name = _medicineNameController.text.trim();
+                            if (name.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Vui lòng nhập tên thuốc')),
+                              );
+                              return;
+                            }
+
+                            final user = Provider.of<AuthProvider>(context, listen: false).firebaseUser;
+                            if (user == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Vui lòng đăng nhập lại')),
+                              );
+                              return;
+                            }
+
+                            // Tạo model
+                            final newMedicine = MedicineModel(
+                                id: '', 
+                                name: name,
+                                dosage: '1 viên', 
+                                time: TimeOfDayModel(hour: _selectedTime.hour, minute: _selectedTime.minute),
+                                userId: user.uid,
+                                repeatDays: _selectedDays,
+                                sound: _selectedSound
                             );
-                            // Thêm logic lưu dữ liệu ở đây
+
+                            // Lưu vào DB
+                            try {
+                              await DatabaseService().addMedicine(newMedicine);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Đã thêm lịch uống thuốc')),
+                                );
+                                Navigator.pop(context);
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Lỗi: $e')),
+                                );
+                              }
+                            }
                           },
                           borderRadius: BorderRadius.circular(50),
                           child: const Padding(
@@ -291,7 +335,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                       decoration: InputDecoration(
                         hintText: 'Nhập tên thuốc...',
                         hintStyle: TextStyle(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withValues(alpha: 0.5),
                         ),
                         filled: true,
                         fillColor: const Color(0xFFFFCEBF),
@@ -330,14 +374,14 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                                   _formattedDate,
                                   style: TextStyle(
                                     fontSize: 16,
-                                    color: Colors.black.withOpacity(0.4),
+                                    color: Colors.black.withValues(alpha: 0.4),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Icon(
                                   Icons.calendar_today,
                                   size: 18,
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                 ),
                               ],
                             ),
@@ -345,7 +389,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                         ),
                       ),
                     ),
-                    Divider(color: Colors.black.withOpacity(0.2)),
+                    Divider(color: Colors.black.withValues(alpha: 0.2)),
 
                     // Chọn Giờ
                     InkWell(
@@ -375,7 +419,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                                 Icon(
                                   Icons.access_time,
                                   size: 20,
-                                  color: Colors.black.withOpacity(0.3),
+                                  color: Colors.black.withValues(alpha: 0.3),
                                 ),
                               ],
                             ),
@@ -383,7 +427,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                         ),
                       ),
                     ),
-                    Divider(color: Colors.black.withOpacity(0.2)),
+                    Divider(color: Colors.black.withValues(alpha: 0.2)),
                     const SizedBox(height: 20),
 
                     // --- THIẾT LẬP KHÁC ---
@@ -404,21 +448,21 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                             _repeatDayText,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.black.withOpacity(0.4),
+                              color: Colors.black.withValues(alpha: 0.4),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Icon(
                             Icons.arrow_forward_ios,
                             size: 15,
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                           ),
                         ],
                       ),
                       onTap: _showRepeatDayPicker,
                       contentPadding: EdgeInsets.zero,
                     ),
-                    Divider(color: Colors.black.withOpacity(0.2)),
+                    Divider(color: Colors.black.withValues(alpha: 0.2)),
 
                     // Âm thanh (Sound)
                     ListTile(
@@ -436,21 +480,21 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                             _selectedSound,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.black.withOpacity(0.4),
+                              color: Colors.black.withValues(alpha: 0.4),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Icon(
                             Icons.arrow_forward_ios,
                             size: 15,
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                           ),
                         ],
                       ),
                       onTap: _showSoundPicker,
                       contentPadding: EdgeInsets.zero,
                     ),
-                    Divider(color: Colors.black.withOpacity(0.2)),
+                    Divider(color: Colors.black.withValues(alpha: 0.2)),
                   ],
                 ),
               ),

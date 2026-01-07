@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:antam_app/settings_page.dart';
+
 class ParentHomePage extends StatelessWidget {
   const ParentHomePage({super.key});
 
@@ -44,6 +46,17 @@ class ParentHomePage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Colors.black54),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(

@@ -1,19 +1,39 @@
+import 'package:antam_app/settings_page.dart';
 import 'package:antam_app/check_in_history.dart';
 import 'package:antam_app/create_medicine.dart';
 import 'package:antam_app/create_checkup.dart';
 import 'package:antam_app/following.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+
+import 'models/medicine_model.dart';
+import 'models/checkup_model.dart';
+import 'providers/auth_provider.dart';
+import 'services/database_service.dart';
 
 class ChildrenHomePage extends StatefulWidget {
-  const ChildrenHomePage({Key? key}) : super(key: key);
+  const ChildrenHomePage({super.key});
 
   @override
   State<ChildrenHomePage> createState() => _ChildrenHomePageState();
 }
 
 class _ChildrenHomePageState extends State<ChildrenHomePage> {
+  final DatabaseService _dbService = DatabaseService();
+
   @override
   Widget build(BuildContext context) {
+    // Lấy user hiện tại từ AuthProvider
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.firebaseUser;
+    final userModel = authProvider.userModel;
+
+    // Nếu chưa đăng nhập hoặc không có thông tin
+    if (user == null) {
+      return const Scaffold(body: Center(child: Text("Vui lòng đăng nhập")));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
 
@@ -37,8 +57,9 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
         child: Column(
           children: [
             _warningCard(),
-            _userInfo(),
+            _userInfo(userModel?.name ?? "Người dùng"),
 
+            // --- MEDICINES SECTION ---
             _sectionHeader(
               title: "TRẠNG THÁI UỐNG THUỐC",
               onAdd: () {
@@ -48,9 +69,52 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
                 );
               },
             ),
-            _medicineCard("Thuốc huyết áp", "Đã uống lúc 08:00", true),
-            _medicineCard("Thuốc tiểu đường", "Chưa uống", false),
+            
+            // StreamBuilder for Medicines
+            StreamBuilder<List<MedicineModel>>(
+              stream: _dbService.getMedicines(user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Text("Lỗi: ${snapshot.error}");
+                }
+                final medicines = snapshot.data ?? [];
+                
+                if (medicines.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text("Chưa có đơn thuốc nào."),
+                  );
+                }
 
+                return Column(
+                  children: medicines.map((med) {
+                    return _medicineCard(med, () async {
+                      // Confirm dialog
+                      bool confirm = await showDialog(
+                        context: context, 
+                        builder: (ctx) => AlertDialog(
+                          title: const Text("Xóa thuốc này?"),
+                          content: Text("Bạn có chắc muốn xóa: ${med.name}?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
+                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Xóa", style: TextStyle(color: Colors.red))),
+                          ],
+                        )
+                      ) ?? false;
+                      
+                      if (confirm) {
+                         await _dbService.deleteMedicine(med.id);
+                      }
+                    });
+                  }).toList(),
+                );
+              },
+            ),
+
+            // --- CHECKUPS SECTION ---
             _sectionHeader(
               title: "LỊCH TÁI KHÁM",
               onAdd: () {
@@ -60,7 +124,44 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
                 );
               },
             ),
-            _reExaminationCard(),
+            
+            // StreamBuilder for Checkups
+            StreamBuilder<List<CheckupModel>>(
+              stream: _dbService.getCheckups(user.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Text("Lỗi: ${snapshot.error}");
+                }
+                final checkups = snapshot.data ?? [];
+
+                if (checkups.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text("Chưa có lịch khám nào."),
+                  );
+                }
+
+                // Lấy lịch khám gần nhất
+                return Column(
+                  children: checkups.map((c) => _reExaminationCard(c, () async {
+                      bool confirm = await showDialog(
+                        context: context, 
+                        builder: (ctx) => AlertDialog(
+                          title: const Text("Xóa lịch khám này?"),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
+                            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Xóa", style: TextStyle(color: Colors.red))),
+                          ],
+                        )
+                      ) ?? false;
+                      if (confirm) await _dbService.deleteCheckup(c.id);
+                  })).toList(),
+                );
+              },
+            ),
 
             _sectionHeader(title: "LỊCH SỬ CHECK-IN"),
             _checkinCard(),
@@ -72,7 +173,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  // ================= COMPONENTS (Giữ nguyên các hàm helper) =================
+  // ================= COMPONENTS =================
   Widget _warningCard() {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -98,7 +199,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  Widget _userInfo() {
+  Widget _userInfo(String userName) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -109,17 +210,38 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             child: const Icon(Icons.person, color: Colors.white),
           ),
           const SizedBox(width: 12),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Bố: Nguyễn Văn A",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              Text("Tuổi: 80"),
+              Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+              // Giả lập tuổi, có thể thêm field vào User model
+              const Text("Tuổi: --"),
             ],
           ),
           const Spacer(),
-          _smallAvatar(),
-          Transform.translate(offset: const Offset(-10, 0), child: _smallAvatar()),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'settings',
+                child: Row(
+                  children: [
+                     Icon(Icons.settings, color: Colors.black54),
+                     SizedBox(width: 8),
+                     Text("Cài đặt"),
+                  ],
+                ),
+              )
+            ],
+            child: _smallAvatar(),
+          ),
         ],
       ),
     );
@@ -153,41 +275,64 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  Widget _medicineCard(String name, String status, bool done) {
+  Widget _medicineCard(MedicineModel med, VoidCallback onDelete) {
+    // Format repeat days
+    String subText = "Liều: ${med.dosage} - ${med.time.format()}";
+    if (med.repeatDays.isNotEmpty) {
+      if (med.repeatDays.length == 7) {
+        subText += " (Hàng ngày)";
+      } else {
+        subText += " (${med.repeatDays.join(',')})";
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                Text(status),
-              ],
-            ),
-            Icon(
-              done ? Icons.check_circle : Icons.cancel,
-              color: done ? Colors.green : Colors.red,
-              size: 28,
-            ),
-          ],
+      child: InkWell(
+        onLongPress: onDelete, // Xóa khi nhấn giữ
+        onTap: () async {
+            // Tạm thời cho phép toggle trạng thái khi nhấn vào để test
+            // Sau này logic này sẽ nằm ở phía Parent
+            await _dbService.updateMedicineStatus(med.id, !med.isConfirmed);
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(med.name,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(subText, style: const TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+              // Status Icon
+              Icon(
+                med.isConfirmed ? Icons.check_circle : Icons.cancel,
+                color: med.isConfirmed ? Colors.green : Colors.red,
+                size: 28,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _reExaminationCard() {
+  Widget _reExaminationCard(CheckupModel checkup, VoidCallback onDelete) {
+    final dateStr = DateFormat('dd/MM/yyyy - HH:mm').format(checkup.date);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -195,19 +340,23 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
-          children: const [
-            Icon(Icons.calendar_month),
-            SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Hẹn khám tim mạch",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Text("Thứ 2, 8/12/2025"),
-              ],
+          children: [
+            const Icon(Icons.calendar_month, color: Colors.blueAccent),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(checkup.hospitalName,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(dateStr, style: const TextStyle(color: Colors.grey)),
+                ],
+              ),
             ),
-            Spacer(),
-            Icon(Icons.favorite, color: Colors.red),
+             IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.grey),
+              onPressed: onDelete,
+            ),
           ],
         ),
       ),
