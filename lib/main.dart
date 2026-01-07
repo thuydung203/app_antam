@@ -1,13 +1,16 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:antam_app/providers/auth_provider.dart';
+import 'package:antam_app/providers/auth_provider.dart'; // Đảm bảo đúng đường dẫn
 import 'firebase_options.dart';
-import 'login.dart';
+import 'loading.dart'; // Hoặc trang bắt đầu bạn muốn
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(
     MultiProvider(
       providers: [
@@ -16,7 +19,6 @@ void main() async {
       child: const MyApp(),
     ),
   );
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -26,7 +28,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const LoginPage(),
+      home: const LoadingPage(), // Đặt trang bắt đầu ở đây
     );
   }
 }
