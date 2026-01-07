@@ -3,6 +3,8 @@ import '../models/user_model.dart';
 import '../models/medicine_model.dart';
 import '../models/checkup_model.dart';
 import '../models/location_model.dart';
+import '../models/checkin_model.dart';
+
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -12,6 +14,8 @@ class DatabaseService {
   CollectionReference get _medicinesCollection => _db.collection('medicines');
   CollectionReference get _checkupsCollection => _db.collection('checkups');
   CollectionReference get _locationsCollection => _db.collection('locations');
+  CollectionReference get _checkinsCollection => _db.collection('checkins');
+
 
   // --- User Operations ---
 
@@ -96,5 +100,38 @@ class DatabaseService {
       }
       return null;
     });
+  }
+
+  // --- Check-in Operations ---
+
+  Future<void> addCheckIn(CheckInModel checkin) async {
+    // Use date (YYYY-MM-DD) as document ID to ensure only one check-in per day
+    String dateId = "${checkin.date.year}-${checkin.date.month}-${checkin.date.day}";
+    String docId = "${checkin.userId}_$dateId";
+    await _checkinsCollection.doc(docId).set(checkin.toMap());
+  }
+
+  Stream<List<CheckInModel>> getCheckIns(String userId, DateTime month) {
+    DateTime startOfMonth = DateTime(month.year, month.month, 1);
+    DateTime endOfMonth = DateTime(month.year, month.month + 1, 0, 23, 59, 59);
+
+    return _checkinsCollection
+        .where('userId', isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return CheckInModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    });
+  }
+
+  Future<bool> hasCheckedInToday(String userId) async {
+    DateTime now = DateTime.now();
+    String dateId = "${now.year}-${now.month}-${now.day}";
+    String docId = "${userId}_$dateId";
+    DocumentSnapshot doc = await _checkinsCollection.doc(docId).get();
+    return doc.exists;
   }
 }

@@ -5,6 +5,9 @@ class UserModel {
   final String? name;
   final String? parentId; // If child
   final List<String>? childrenIds; // If parent
+  final double? latitude;
+  final double? longitude;
+  final int? age;
 
   UserModel({
     required this.uid,
@@ -13,6 +16,9 @@ class UserModel {
     this.name,
     this.parentId,
     this.childrenIds,
+    this.latitude,
+    this.longitude,
+    this.age,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, String uid) {
@@ -23,6 +29,9 @@ class UserModel {
       name: data['name'],
       parentId: data['parentId'],
       childrenIds: (data['childrenIds'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+      latitude: (data['latitude'] as num?)?.toDouble(),
+      longitude: (data['longitude'] as num?)?.toDouble(),
+      age: data['age'] as int?,
     );
   }
 
@@ -33,6 +42,9 @@ class UserModel {
       'name': name,
       'parentId': parentId,
       'childrenIds': childrenIds,
+      'latitude': latitude,
+      'longitude': longitude,
+      'age': age,
     };
   }
 }

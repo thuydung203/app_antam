@@ -1,150 +1,161 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:antam_app/providers/auth_provider.dart';
+import 'package:antam_app/services/location_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() {
-  // Chạy ứng dụng với widget chính là MyApp
-  runApp(const MyApp());
+class GPSScreen extends StatefulWidget {
+  final String? targetParentUid; // Specific parent to track, if provided
+
+  const GPSScreen({super.key, this.targetParentUid});
+
+  @override
+  State<GPSScreen> createState() => _GPSScreenState();
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class _GPSScreenState extends State<GPSScreen> {
+  final LocationService _locationService = LocationService();
+  GoogleMapController? _mapController;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'GPS Screen Demo',
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.grey[50], 
-        primarySwatch: Colors.blue,
-      ),
-      home: const GPSScreen(), 
-    );
-  }
-}
+    final auth = Provider.of<AuthProvider>(context);
+    final user = auth.userModel;
 
-class GPSScreen extends StatelessWidget {
-  const GPSScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    // Logic: If user is a child, track their parentId
+    String? parentIdToTrack = widget.targetParentUid;
+    String errorMessage = "Không có thông tin cha mẹ để theo dõi";
+    
+    if (user == null) {
+      errorMessage = "Vui lòng đăng nhập để xem lời vị trí";
+    } else if (user.role != 'child') {
+      errorMessage = "Tài khoản của bạn không phải là 'Con', nên không thể theo dõi cha mẹ.";
+    } else if (user.parentId == null) {
+      errorMessage = "Tài khoản của bạn chưa được liên kết với Cha mẹ. Vui lòng thực hiện 'Kết nối' trước.";
+    } else {
+      parentIdToTrack = user.parentId;
+    }
 
     return Scaffold(
-      // 2. Body
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  SizedBox(
-                    height: screenWidth * 1.2, 
-                    width: screenWidth,
-                    // Container giả lập khu vực bản đồ
-                    child: Center(
-                        child: Container(
-                            color: Colors.grey[400], 
-                            // Bạn có thể thêm Text hoặc Image.asset tại đây
-                        ),
-                    ),
+      appBar: AppBar(
+        title: const Text("Theo dõi cha mẹ"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
+      body: parentIdToTrack == null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+              ),
+            )
+          : StreamBuilder<DocumentSnapshot>(
+              stream: _locationService.getChildLocationStream(parentIdToTrack),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) return Center(child: Text("Lỗi: ${snapshot.error}"));
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+                final data = snapshot.data!.data() as Map<String, dynamic>?;
+                if (data == null) return const Center(child: Text("Không tìm thấy dữ liệu cha mẹ"));
+                
+                final double? lat = data['latitude']?.toDouble();
+                final double? lng = data['longitude']?.toDouble();
+                final String name = data['name'] ?? "Cha mẹ";
+
+                if (lat == null || lng == null) {
+                  return const Center(child: Text("Cha mẹ chưa bật chia sẻ vị trí hoặc chưa có dữ liệu"));
+                }
+
+                final LatLng parentPos = LatLng(lat, lng);
+                final Set<Marker> markers = {
+                  Marker(
+                    markerId: const MarkerId('parent_location'),
+                    position: parentPos,
+                    infoWindow: InfoWindow(title: name, snippet: "Vị trí hiện tại của cha mẹ"),
                   ),
-                  
-                  // 2.2. Phần Thông Tin Địa Điểm
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        // Địa chỉ
-                        const Text(
-                          '175 Tây Sơn, P. Đống Đa, Hà Nội',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        
-                        // "Trực tiếp"
-                        const Text(
-                          'Trực tiếp',
-                          style: TextStyle(fontSize: 14, color: Colors.black54),
-                        ),
-                        const SizedBox(height: 16),
+                };
 
+                // Move camera to parent's position if map is ready
+                _mapController?.animateCamera(CameraUpdate.newLatLng(parentPos));
 
-                        // Các nút hành động (Truy cập & Chỉ đường)
-                        Row(
-                          children: <Widget>[
-                            // Nút 1: Truy cập (Khối màu xám trống)
-                            Expanded(
-                              child: Container(
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
+                return Column(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: GoogleMap(
+                        initialCameraPosition: CameraPosition(target: parentPos, zoom: 15),
+                        onMapCreated: (controller) => _mapController = controller,
+                        markers: markers,
+                        myLocationEnabled: true,
+                        zoomControlsEnabled: true,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                             ),
-                            const SizedBox(width: 16),
-                            // Nút 2: Chỉ đường
-                            Expanded(
-                              child: Container(
-                                height: 100,
-                                padding: const EdgeInsets.symmetric(vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200], 
-                                  borderRadius: BorderRadius.circular(8),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, color: Colors.red),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    "Lat: $lat, Lng: $lng",
+                                    style: const TextStyle(color: Colors.black54),
+                                  ),
                                 ),
-                                child: Column(
-                                  children: [
-                                    Icon(Icons.directions, color: Colors.blue[600], size: 28),
-                                    Text(
-                                      'Chỉ đường',
-                                      style: TextStyle(color: Colors.blue[600], fontWeight: FontWeight.bold),
-                                    ),
-                                    const Text(
-                                      '41 km',
-                                      style: TextStyle(color: Colors.black54, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              ],
+                            ),
+                            const Spacer(),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildActionButton(Icons.history, "Lịch sử"),
+                                _buildActionButton(Icons.directions, "Chỉ đường"),
+                                _buildActionButton(Icons.notifications_active, "Vùng an toàn"),
+                              ],
                             ),
                           ],
                         ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Phần Thông báo
-                        Container(
-                          height: 100,
-                          padding: const EdgeInsets.all(16.0),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200], 
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Icon(Icons.notifications, color: Colors.red, size: 30),
-                              SizedBox(width: 12),
-                              Text(
-                                'Thông báo',
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              },
             ),
-          ),
-        ],
-      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label) {
+    return Column(
+      children: [
+        CircleAvatar(
+          radius: 25,
+          backgroundColor: Colors.blue.withValues(alpha: 0.1),
+          child: Icon(icon, color: Colors.blue),
+        ),
+        const SizedBox(height: 5),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
     );
   }
 }
+

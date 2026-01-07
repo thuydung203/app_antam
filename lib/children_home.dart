@@ -9,6 +9,8 @@ import 'package:intl/intl.dart';
 
 import 'models/medicine_model.dart';
 import 'models/checkup_model.dart';
+import 'models/checkin_model.dart';
+import 'models/user_model.dart';
 import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
 
@@ -21,6 +23,32 @@ class ChildrenHomePage extends StatefulWidget {
 
 class _ChildrenHomePageState extends State<ChildrenHomePage> {
   final DatabaseService _dbService = DatabaseService();
+  UserModel? _parentModel;
+  bool _isLoadingParent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadParentInfo();
+    });
+  }
+
+  Future<void> _loadParentInfo() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userModel = authProvider.userModel;
+
+    if (userModel?.parentId != null) {
+      if (mounted) setState(() => _isLoadingParent = true);
+      final parent = await _dbService.getUser(userModel!.parentId!);
+      if (mounted) {
+        setState(() {
+          _parentModel = parent;
+          _isLoadingParent = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +85,12 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
         child: Column(
           children: [
             _warningCard(),
-            _userInfo(userModel?.name ?? "Người dùng"),
+            _userInfo(
+              _isLoadingParent 
+                ? "Đang tải..." 
+                : (_parentModel?.name ?? "Chưa kết nối cha mẹ"),
+              _parentModel?.age,
+            ),
 
             // --- MEDICINES SECTION ---
             _sectionHeader(
@@ -72,7 +105,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             
             // StreamBuilder for Medicines
             StreamBuilder<List<MedicineModel>>(
-              stream: _dbService.getMedicines(user.uid),
+              stream: _dbService.getMedicines(userModel?.parentId ?? user.uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -127,7 +160,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             
             // StreamBuilder for Checkups
             StreamBuilder<List<CheckupModel>>(
-              stream: _dbService.getCheckups(user.uid),
+              stream: _dbService.getCheckups(userModel?.parentId ?? user.uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -164,7 +197,22 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             ),
 
             _sectionHeader(title: "LỊCH SỬ CHECK-IN"),
-            _checkinCard(),
+            StreamBuilder<List<CheckInModel>>(
+              stream: _dbService.getCheckIns(userModel?.parentId ?? user.uid, DateTime.now()),
+              builder: (context, snapshot) {
+                int percentage = 0;
+                if (snapshot.hasData) {
+                  final checkins = snapshot.data!;
+                  final now = DateTime.now();
+                  final daysInMonth = now.day; // Number of days passed in current month
+                  if (daysInMonth > 0) {
+                    percentage = ((checkins.length / daysInMonth) * 100).round();
+                    if (percentage > 100) percentage = 100;
+                  }
+                }
+                return _checkinCard(percentage);
+              },
+            ),
 
             const SizedBox(height: 30),
           ],
@@ -199,7 +247,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  Widget _userInfo(String userName) {
+  Widget _userInfo(String parentName, int? parentAge) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
@@ -213,9 +261,11 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(userName, style: const TextStyle(fontWeight: FontWeight.bold)),
-              // Giả lập tuổi, có thể thêm field vào User model
-              const Text("Tuổi: --"),
+              Text(
+                parentName.contains("Đang tải") ? parentName : "Bố: $parentName", 
+                style: const TextStyle(fontWeight: FontWeight.bold)
+              ),
+              Text("Tuổi: ${parentAge ?? "--"}"),
             ],
           ),
           const Spacer(),
@@ -363,7 +413,8 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  Widget _checkinCard() {
+  Widget _checkinCard(int percentage) {
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -381,15 +432,15 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
                 alignment: Alignment.center,
                 children: [
                   CircularProgressIndicator(
-                    value: 1,
+                    value: percentage / 100,
                     strokeWidth: 8,
                     valueColor:
                     const AlwaysStoppedAnimation(Color(0xFFFFA387)),
                   ),
-                  const Text(
-                    "100%",
+                  Text(
+                    "$percentage%",
                     style:
-                    TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                    const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
