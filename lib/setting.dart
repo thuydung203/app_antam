@@ -4,6 +4,9 @@ import 'package:antam_app/setting_account_security_page.dart';
 import 'package:antam_app/setting_language_page.dart';
 import 'package:antam_app/notification_setting_page.dart';
 import 'package:antam_app/roleselection.dart';
+import 'package:provider/provider.dart';
+import 'package:antam_app/providers/auth_provider.dart';
+import 'package:antam_app/login.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
@@ -33,16 +36,21 @@ class SettingPage extends StatelessWidget {
 
             // Avatar + Name
             Row(
-              children: const [
+              children: [
                 CircleAvatar(
                   radius: 35,
                   backgroundColor: Color(0xFFFFC1A8),
                   child: Icon(Icons.person, size: 45, color: Colors.white),
                 ),
                 SizedBox(width: 20),
-                Text(
-                  "Nguyễn Văn A",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) {
+                    final userName = auth.userModel?.name ?? "Người dùng";
+                    return Text(
+                      userName,
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    );
+                  },
                 )
               ],
             ),
@@ -121,7 +129,17 @@ class SettingPage extends StatelessWidget {
                   _buildMenuItem(
                     icon: Icons.logout, 
                     title: "Đăng xuất", 
-                    color: Colors.red
+                    color: Colors.red,
+                    onTap: () async {
+                      await Provider.of<AuthProvider>(context, listen: false).signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                          (route) => false,
+                        );
+                      }
+                    },
                   ),
                 ],
               ),

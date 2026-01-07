@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:antam_app/providers/auth_provider.dart';
 
 class AccountInfoPage extends StatelessWidget {
   const AccountInfoPage({super.key});
@@ -22,55 +24,60 @@ class AccountInfoPage extends StatelessWidget {
         centerTitle: true,
       ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 25),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 10),
+      body: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          final user = auth.userModel;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 10),
 
-            const CircleAvatar(
-              radius: 45,
-              backgroundColor: Colors.black12,
-              child: Icon(Icons.person, size: 55, color: Colors.black54),
+                const CircleAvatar(
+                  radius: 45,
+                  backgroundColor: Colors.black12,
+                  child: Icon(Icons.person, size: 55, color: Colors.black54),
+                ),
+
+                const SizedBox(height: 12),
+
+                Text(
+                  user?.name ?? "Người dùng",
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+
+                const SizedBox(height: 30),
+
+                // Số điện thoại (Tạm thời để trống hoặc chưa có trong model)
+                _buildLabel("Số điện thoại"),
+                _buildInputBox(
+                  value: "Chưa cập nhật",
+                  rightIcon: Icons.phone_in_talk,
+                ),
+
+                const SizedBox(height: 20),
+
+                // Email
+                _buildLabel("Email liên hệ"),
+                _buildInputBox(
+                  value: user?.email ?? "Đang tải...",
+                  rightIcon: Icons.mail,
+                ),
+
+                const SizedBox(height: 20),
+
+                // Địa chỉ
+                _buildLabel("Địa chỉ khác"),
+                _buildInputBox(
+                  value: "Chưa cập nhật",
+                ),
+
+                const SizedBox(height: 40),
+              ],
             ),
-
-            const SizedBox(height: 12),
-
-            const Text(
-              "Nguyễn Văn A",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            ),
-
-            const SizedBox(height: 30),
-
-            // Số điện thoại
-            _buildLabel("Số điện thoại"),
-            _buildInputBox(
-              value: "+8485248736",
-              rightIcon: Icons.phone_in_talk,
-            ),
-
-            const SizedBox(height: 20),
-
-            // Email
-            _buildLabel("Email liên hệ"),
-            _buildInputBox(
-              value: "....@gmail.com",
-              rightIcon: Icons.mail,
-            ),
-
-            const SizedBox(height: 20),
-
-            // Địa chỉ
-            _buildLabel("Địa chỉ khác"),
-            _buildInputBox(
-              value: "Số nhà 10, đường ABC, TP. Hà Nội",
-            ),
-
-            const SizedBox(height: 40),
-          ],
-        ),
+          );
+        },
       ),
 
       // Bottom Navigation
