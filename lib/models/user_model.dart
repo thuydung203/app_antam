@@ -3,14 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class UserModel {
   final String uid;
   final String email;
-  final String role; 
+  final String role;
   final String? name;
-  final String? avatar; 
-  final String? phone; 
+  final String? avatar;
+  final String? phone;
   final String? address;
-  final DateTime? birthDate; // Thêm ngày sinh
-  final String? parentId; 
-  final List<String>? childrenIds; 
+  final DateTime? birthDate; 
+  final String? parentId;
+  final List<String>? childrenIds;
+  final double? latitude;
+  final double? longitude;
 
   UserModel({
     required this.uid,
@@ -23,6 +25,8 @@ class UserModel {
     this.birthDate,
     this.parentId,
     this.childrenIds,
+    this.latitude,
+    this.longitude,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data, String uid) {
@@ -37,6 +41,8 @@ class UserModel {
       birthDate: data['birthDate'] != null ? (data['birthDate'] as Timestamp).toDate() : null,
       parentId: data['parentId'],
       childrenIds: (data['childrenIds'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+      latitude: (data['latitude'] as num?)?.toDouble(),
+      longitude: (data['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -51,17 +57,20 @@ class UserModel {
       'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
       'parentId': parentId,
       'childrenIds': childrenIds,
+      'latitude': latitude,
+      'longitude': longitude,
+      'age': age, // Vẫn lưu tuổi vào DB bằng cách gọi hàm get age bên dưới
     };
   }
 
-  // Hàm tính tuổi tiện ích
+  // Hàm tính tuổi tự động dựa trên birthDate
   int get age {
     if (birthDate == null) return 0;
     final now = DateTime.now();
-    int age = now.year - birthDate!.year;
+    int ageResult = now.year - birthDate!.year;
     if (now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) {
-      age--;
+      ageResult--;
     }
-    return age;
+    return ageResult;
   }
 }
