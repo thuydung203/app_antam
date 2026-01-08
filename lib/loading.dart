@@ -1,11 +1,11 @@
 import 'package:antam_app/main_navigation.dart';
+import 'package:antam_app/parent_navigation.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider; // Hide the conflicting AuthProvider
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-// Import màn hình
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
 import 'login.dart';
 import 'roleselection.dart';
-import 'parent_home.dart';
 
 class LoadingPage extends StatefulWidget {
   const LoadingPage({super.key});
@@ -19,65 +19,60 @@ class _LoadingPageState extends State<LoadingPage> {
   @override
   void initState() {
     super.initState();
-    _handleNavigation();
+    _checkAuthStatus();
   }
 
-  Future<void> _handleNavigation() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
+  Future<void> _checkAuthStatus() async {
+    // Chờ 2 giây để hiển thị logo
+    await Future.delayed(const Duration(seconds: 2));
 
-      // Giả sử mặc định là chưa login để test, bạn có thể sửa lại logic này sau
-      bool isLoggedIn = prefs.getBool("isLoggedIn") ?? false;
-      String? role = prefs.getString("role"); // 'child' hoặc 'parent'
+    if (!mounted) return;
 
-      // Chờ 2 giây để hiển thị logo
-      await Future.delayed(const Duration(seconds: 2));
+    // Lấy AuthProvider
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    // 1. Kiểm tra Firebase Auth xem có user đang đăng nhập không
+    final currentUser = FirebaseAuth.instance.currentUser;
 
-      if (!mounted) return;
-
-      // 1. Nếu chưa đăng nhập -> Về trang Login
-      if (!isLoggedIn) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
-        return;
+    if (currentUser == null) {
+      // CHƯA ĐĂNG NHẬP -> Về trang Login
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    } else {
+      // ĐÃ ĐĂNG NHẬP -> Kiểm tra dữ liệu UserModel từ Firestore
+      // AuthProvider của bạn đã có logic tải userModel trong hàm _init()
+      
+      // Đợi một chút để AuthProvider load xong dữ liệu từ Firestore
+      int retry = 0;
+      while (authProvider.userModel == null && retry < 5) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        retry++;
       }
 
-      // 2. Nếu đã đăng nhập nhưng chưa chọn vai trò -> Về trang Role Selection
-      if (role == null) {
+      final userModel = authProvider.userModel;
+
+      if (userModel == null) {
+        // Nếu đã có Firebase User nhưng không lấy được dữ liệu Firestore
+        // Có thể là chưa chọn Role sau khi đăng ký
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
         );
-        return;
-      }
-
-      // 3. Nếu vai trò là CON -> Vào hệ thống tab chính
-      if (role == "child") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
-        );
-        return;
-      }
-
-      // 4. Nếu vai trò là CHA MẸ -> Vào trang chủ cha mẹ
-      if (role == "parent") {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ParentHomePage()),
-        );
-        return;
-      }
-    } catch (e) {
-      debugPrint("Lỗi loading: $e");
-      // Nếu có lỗi, mặc định về trang Login cho an toàn
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
+      } else {
+        // Đã có đầy đủ thông tin -> Vào trang tương ứng với Role
+        if (userModel.role == "child") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ParentNavigation()),
+          );
+        }
       }
     }
   }
@@ -91,14 +86,15 @@ class _LoadingPageState extends State<LoadingPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 250, // Chỉnh lại kích thước logo cho vừa phải
+              width: 250,
               child: Image.asset(
                 "assets/images/logo_removeBG.png",
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.favorite, size: 100, color: Colors.red),
+                errorBuilder: (context, error, stackTrace) => 
+                    const Icon(Icons.favorite, size: 100, color: Color(0xFFFFA387)),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFA387)),
             ),

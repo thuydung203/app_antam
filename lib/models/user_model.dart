@@ -1,16 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class UserModel {
   final String uid;
   final String email;
-  final String role; // 'parent' or 'child'
+  final String role; 
   final String? name;
-  final String? parentId; // If child
-  final List<String>? childrenIds; // If parent
+  final String? avatar; 
+  final String? phone; 
+  final String? address;
+  final DateTime? birthDate; // Thêm ngày sinh
+  final String? parentId; 
+  final List<String>? childrenIds; 
 
   UserModel({
     required this.uid,
     required this.email,
     required this.role,
     this.name,
+    this.avatar,
+    this.phone,
+    this.address,
+    this.birthDate,
     this.parentId,
     this.childrenIds,
   });
@@ -21,6 +31,10 @@ class UserModel {
       email: data['email'] ?? '',
       role: data['role'] ?? 'parent',
       name: data['name'],
+      avatar: data['avatar'],
+      phone: data['phone'],
+      address: data['address'],
+      birthDate: data['birthDate'] != null ? (data['birthDate'] as Timestamp).toDate() : null,
       parentId: data['parentId'],
       childrenIds: (data['childrenIds'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
     );
@@ -31,8 +45,23 @@ class UserModel {
       'email': email,
       'role': role,
       'name': name,
+      'avatar': avatar,
+      'phone': phone,
+      'address': address,
+      'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
       'parentId': parentId,
       'childrenIds': childrenIds,
     };
+  }
+
+  // Hàm tính tuổi tiện ích
+  int get age {
+    if (birthDate == null) return 0;
+    final now = DateTime.now();
+    int age = now.year - birthDate!.year;
+    if (now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) {
+      age--;
+    }
+    return age;
   }
 }
