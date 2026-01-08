@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
+import 'package:antam_app/main_navigation.dart';
 import 'package:antam_app/providers/auth_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +34,6 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
     super.dispose();
   }
 
-  // Tạo và lưu mã vào Firestore
   Future<void> _generateAndSaveCode() async {
     final random = Random();
     final newCode = (random.nextInt(9000000) + 1000000).toString();
@@ -46,7 +47,6 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
         _secondsRemaining = 1800;
       });
 
-      // Lưu mã vào Firestore để cha mẹ có thể tìm thấy
       await FirebaseFirestore.instance.collection('pairing_codes').doc(_pairingCode).set({
         'childId': user.uid,
         'childName': user.name,
@@ -78,20 +78,55 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.userModel;
+    final List<dynamic> followingList = user?.following ?? [];
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
         automaticallyImplyLeading: false, 
-        title: const Text("Gửi mã kết nối", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text("KẾT NỐI NGƯỜI THÂN", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 20),
+            
+            // --- PHẦN 1: MÃ KẾT NỐI (QR) ---
             _buildCodeCard(),
+            
+            const SizedBox(height: 30),
+            
+            // --- PHẦN 2: DANH SÁCH ĐÃ KẾT NỐI ---
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text("BẠN ĐANG THEO DÕI:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 15),
+            
+            if (followingList.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(child: Text("Chưa có ai kết nối với bạn.", style: TextStyle(color: Colors.grey))),
+              )
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: followingList.length,
+                itemBuilder: (context, index) {
+                  final person = followingList[index] as Map<String, dynamic>;
+                  return _personCard(context, person);
+                },
+              ),
+            
             const SizedBox(height: 30),
           ],
         ),
@@ -132,6 +167,57 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
           const SizedBox(height: 20),
           const Text("Đưa mã này cho Cha/Mẹ để kết nối", textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
         ],
+      ),
+    );
+  }
+
+  Widget _personCard(BuildContext context, Map<String, dynamic> personData) {
+    final String name = personData['name'] ?? "Chưa rõ";
+    final String age = "Tuổi: ${personData['age'] ?? '--'}";
+    final String? avatarBase64 = personData['avatar'];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => MainNavigation(selectedPerson: personData)),
+          );
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFC1A8),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.white,
+                backgroundImage: (avatarBase64 != null && avatarBase64.isNotEmpty) 
+                    ? MemoryImage(base64Decode(avatarBase64)) 
+                    : null,
+                child: (avatarBase64 == null || avatarBase64.isEmpty) 
+                    ? const Icon(Icons.person, color: Colors.grey, size: 35) 
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 5),
+                  Text(age, style: const TextStyle(fontSize: 14)),
+                ],
+              ),
+              const Spacer(),
+              const Icon(Icons.arrow_forward_ios, size: 16),
+            ],
+          ),
+        ),
       ),
     );
   }

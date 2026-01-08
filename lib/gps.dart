@@ -6,7 +6,7 @@ import 'package:antam_app/services/location_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GPSScreen extends StatefulWidget {
-  final String? targetParentUid; // Specific parent to track, if provided
+  final String? targetParentUid; 
 
   const GPSScreen({super.key, this.targetParentUid});
 
@@ -23,23 +23,23 @@ class _GPSScreenState extends State<GPSScreen> {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.userModel;
 
-    // Logic: If user is a child, track their parentId
     String? parentIdToTrack = widget.targetParentUid;
-    String errorMessage = "Không có thông tin cha mẹ để theo dõi";
+    String errorMessage = "Không có thông tin người thân để theo dõi";
     
     if (user == null) {
-      errorMessage = "Vui lòng đăng nhập để xem lời vị trí";
+      errorMessage = "Vui lòng đăng nhập để xem vị trí";
     } else if (user.role != 'child') {
-      errorMessage = "Tài khoản của bạn không phải là 'Con', nên không thể theo dõi cha mẹ.";
-    } else if (user.parentId == null) {
-      errorMessage = "Tài khoản của bạn chưa được liên kết với Cha mẹ. Vui lòng thực hiện 'Kết nối' trước.";
+      errorMessage = "Tài khoản của bạn không phải là 'Con', nên không thể theo dõi.";
+    } else if (user.following == null || user.following!.isEmpty) {
+      errorMessage = "Bạn chưa theo dõi người thân nào. Vui lòng thực hiện 'Kết nối' trước.";
     } else {
-      parentIdToTrack = user.parentId;
+      // Lấy ID người đầu tiên trong danh sách following nếu không chỉ định mục tiêu cụ thể
+      parentIdToTrack ??= user.following!.first['uid'];
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Theo dõi cha mẹ"),
+        title: const Text("Theo dõi vị trí"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -62,14 +62,14 @@ class _GPSScreenState extends State<GPSScreen> {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
                 final data = snapshot.data!.data() as Map<String, dynamic>?;
-                if (data == null) return const Center(child: Text("Không tìm thấy dữ liệu cha mẹ"));
+                if (data == null) return const Center(child: Text("Không tìm thấy dữ liệu vị trí"));
                 
                 final double? lat = data['latitude']?.toDouble();
                 final double? lng = data['longitude']?.toDouble();
-                final String name = data['name'] ?? "Cha mẹ";
+                final String name = data['name'] ?? "Người thân";
 
                 if (lat == null || lng == null) {
-                  return const Center(child: Text("Cha mẹ chưa bật chia sẻ vị trí hoặc chưa có dữ liệu"));
+                  return const Center(child: Text("Người thân chưa bật chia sẻ vị trí hoặc chưa có dữ liệu"));
                 }
 
                 final LatLng parentPos = LatLng(lat, lng);
@@ -77,11 +77,10 @@ class _GPSScreenState extends State<GPSScreen> {
                   Marker(
                     markerId: const MarkerId('parent_location'),
                     position: parentPos,
-                    infoWindow: InfoWindow(title: name, snippet: "Vị trí hiện tại của cha mẹ"),
+                    infoWindow: InfoWindow(title: name, snippet: "Vị trí hiện tại"),
                   ),
                 };
 
-                // Move camera to parent's position if map is ready
                 _mapController?.animateCamera(CameraUpdate.newLatLng(parentPos));
 
                 return Column(
@@ -158,4 +157,3 @@ class _GPSScreenState extends State<GPSScreen> {
     );
   }
 }
-

@@ -43,7 +43,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
     super.dispose();
   }
 
-  // LOGIC KẾT NỐI CHÍNH
+  // LOGIC KẾT NỐI: 1 CHA MẸ CHỈ CÓ 1 CON THEO DÕI
   Future<void> _handleConnect() async {
     final String code = _inputController.text.trim();
     if (code.isEmpty) return;
@@ -56,7 +56,12 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
 
       if (parent == null) throw "Vui lòng đăng nhập lại.";
 
-      // 1. Tìm mã trong collection pairing_codes
+      // KIỂM TRA: Nếu Cha Mẹ đã có con theo dõi rồi thì báo lỗi ngay
+      if (parent.childId != null && parent.childId!.isNotEmpty) {
+        throw "Tài khoản của bạn đã được kết nối với một người con khác.";
+      }
+
+      // 1. Tìm mã của Con trong collection pairing_codes
       final doc = await FirebaseFirestore.instance.collection('pairing_codes').doc(code).get();
 
       if (!doc.exists) {
@@ -67,38 +72,41 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
       final String childId = data['childId'];
       final DateTime expiresAt = (data['expiresAt'] as Timestamp).toDate();
 
-      // 2. Kiểm tra hết hạn
       if (DateTime.now().isAfter(expiresAt)) {
         throw "Mã đã hết hạn. Vui lòng yêu cầu mã mới từ con.";
       }
 
-      // 3. Thực hiện kết nối hai chiều
-      // - Thêm con vào danh sách 'following' của cha mẹ
-      final Map<String, dynamic> childInfo = {
-        'uid': childId,
-        'name': data['childName'],
-        'avatar': data['childAvatar'],
+      // --- THỰC HIỆN KẾT NỐI ---
+
+      // A. Cập nhật cho CON (Người theo dõi): Thêm thông tin CHA MẸ vào danh sách 'following'
+      final Map<String, dynamic> parentInfo = {
+        'uid': parent.uid,
+        'name': parent.name,
+        'avatar': parent.avatar,
+        'phone': parent.phone,
+        'age': parent.age,
+        'role': 'parent',
         'connectedAt': FieldValue.serverTimestamp(),
       };
 
-      await FirebaseFirestore.instance.collection('users').doc(parent.uid).update({
-        'following': FieldValue.arrayUnion([childInfo])
-      });
-
-      // - Thêm ID cha mẹ vào 'parentId' của con (hoặc mảng liên kết)
       await FirebaseFirestore.instance.collection('users').doc(childId).update({
-        'parentId': parent.uid
+        'following': FieldValue.arrayUnion([parentInfo]) 
       });
 
-      // 4. Xóa mã sau khi dùng xong
+      // B. Cập nhật cho CHA MẸ (Người được theo dõi): Lưu ID của CON vào 'childId' (duy nhất)
+      await FirebaseFirestore.instance.collection('users').doc(parent.uid).update({
+        'childId': childId,
+      });
+
+      // 2. Xóa mã sau khi dùng xong
       await FirebaseFirestore.instance.collection('pairing_codes').doc(code).delete();
 
       if (mounted) {
         await authProvider.reloadUserModel();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Kết nối thành công!")),
+          const SnackBar(content: Text("Cho phép con theo dõi thành công!")),
         );
-        Navigator.pop(context); // Quay lại trang chủ
+        Navigator.pop(context); 
       }
 
     } catch (e) {
@@ -158,7 +166,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 30),
                   child: Text(
-                    "Vui lòng nhập mã kết nối hiển thị trên điện thoại của con bạn để bắt đầu liên kết.",
+                    "Nhập mã từ điện thoại của con để cho phép con theo dõi sức khỏe của bạn.",
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: Colors.black54),
                   ),
@@ -188,7 +196,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
                               _isScanning = false;
                             });
                             cameraController.stop();
-                            _handleConnect(); // Tự động kết nối sau khi quét
+                            _handleConnect();
                           }
                         }
                       },
@@ -244,7 +252,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Nhập mã ghép nối",
+            "Nhập mã ghép nối từ con",
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 15),
@@ -255,7 +263,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 4),
             decoration: InputDecoration(
-              hintText: "Mã ghép nối",
+              hintText: "Mã 7 chữ số",
               hintStyle: TextStyle(
                 color: Colors.black.withValues(alpha: 0.2),
                 fontSize: 18,

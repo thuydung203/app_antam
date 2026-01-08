@@ -9,9 +9,8 @@ class UserModel {
   final String? phone;
   final String? address;
   final DateTime? birthDate; 
-  final String? parentId;
-  final List<String>? childrenIds;
-  final List<Map<String, dynamic>>? following; // Thêm trường danh sách người đang theo dõi
+  final String? childId; // Dành cho Cha Mẹ: Chỉ 1 người con theo dõi
+  final List<Map<String, dynamic>>? following; // Dành cho Con: Danh sách Cha Mẹ đang theo dõi
   final double? latitude;
   final double? longitude;
 
@@ -24,8 +23,7 @@ class UserModel {
     this.phone,
     this.address,
     this.birthDate,
-    this.parentId,
-    this.childrenIds,
+    this.childId,
     this.following,
     this.latitude,
     this.longitude,
@@ -41,8 +39,7 @@ class UserModel {
       phone: data['phone'],
       address: data['address'],
       birthDate: data['birthDate'] != null ? (data['birthDate'] as Timestamp).toDate() : null,
-      parentId: data['parentId'],
-      childrenIds: (data['childrenIds'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+      childId: data['childId'],
       following: (data['following'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList(),
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
@@ -58,8 +55,7 @@ class UserModel {
       'phone': phone,
       'address': address,
       'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
-      'parentId': parentId,
-      'childrenIds': childrenIds,
+      'childId': childId,
       'following': following,
       'latitude': latitude,
       'longitude': longitude,

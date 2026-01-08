@@ -16,7 +16,6 @@ class _CheckInHistoryPageState extends State<CheckInHistoryPage> {
   final DatabaseService _dbService = DatabaseService();
   DateTime _currentMonth = DateTime.now();
 
-  // Widget riêng để xây dựng từng ô ngày trong lịch
   Widget _buildDayCell(int day, bool isChecked) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -40,14 +39,12 @@ class _CheckInHistoryPageState extends State<CheckInHistoryPage> {
     );
   }
 
-  // Widget xây dựng toàn bộ phần Lịch
   Widget _buildCalendar(List<CheckInModel> checkins) {
     const List<String> weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     
-    // Get first day of month and last day
     DateTime firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
     int daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
-    int firstWeekday = firstDayOfMonth.weekday; // 1=Mon, 7=Sun
+    int firstWeekday = firstDayOfMonth.weekday;
 
     return Column(
       children: [
@@ -165,7 +162,13 @@ class _CheckInHistoryPageState extends State<CheckInHistoryPage> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.userModel;
-    final parentId = user?.parentId ?? user?.uid ?? "";
+    
+    // ĐÃ SỬA: Lấy ID người thân đầu tiên từ danh sách following thay vì parentIds
+    String targetId = user?.uid ?? "";
+    if (user?.role == 'child' && user?.following != null && user!.following!.isNotEmpty) {
+      targetId = user.following!.first['uid'] ?? user.uid;
+    }
+
     final monthStr = DateFormat('MM/yyyy').format(_currentMonth);
 
     return Scaffold(
@@ -179,7 +182,7 @@ class _CheckInHistoryPageState extends State<CheckInHistoryPage> {
         ),
       ),
       body: StreamBuilder<List<CheckInModel>>(
-        stream: _dbService.getCheckIns(parentId, _currentMonth),
+        stream: _dbService.getCheckIns(targetId, _currentMonth),
         builder: (context, snapshot) {
           final checkins = snapshot.data ?? [];
           int percentage = 0;
