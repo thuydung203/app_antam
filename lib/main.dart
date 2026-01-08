@@ -1,10 +1,16 @@
+import 'package:antam_app/add_images.dart';
+import 'package:antam_app/children_home.dart';
+import 'package:antam_app/login.dart';
+import 'package:antam_app/parent_home.dart';
+import 'package:antam_app/paring.dart';
+import 'package:antam_app/setting.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:antam_app/providers/auth_provider.dart'; // Đảm bảo đúng đường dẫn
 import 'firebase_options.dart';
 import 'loading.dart'; // Hoặc trang bắt đầu bạn muốn
-
+import 'setting_account_info_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(

@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:antam_app/providers/auth_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider; // Ẩn AuthProvider của firebase_auth
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 
 class AddImage extends StatefulWidget {
   const AddImage({super.key});
@@ -11,292 +16,288 @@ class AddImage extends StatefulWidget {
 }
 
 class _AddImageState extends State<AddImage> {
-  bool _isSelectionMode = false; // Trạng thái chọn ảnh
-  final Set<int> _selectedIndexes = {}; // Lưu trữ index các ảnh được chọn
-
-  // Danh sách ảnh thực tế sử dụng XFile từ image_picker
-  List<XFile> _images = [];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final ImagePicker _picker = ImagePicker();
+  
+  bool _isLoading = false;
+  bool _isSelectionMode = false;
+  final Set<String> _selectedIds = {};
+  
+  List<QueryDocumentSnapshot> _currentDocs = [];
+  late Stream<QuerySnapshot> _imageStream;
 
-  // Hàm mở album để chọn nhiều ảnh
-  Future<void> _pickImages() async {
+  @override
+  void initState() {
+    super.initState();
+    _imageStream = _firestore
+        .collection('images')
+        .where('userId', isEqualTo: _auth.currentUser?.uid ?? '')
+        .snapshots();
+  }
+
+  Future<void> _pickAndUploadImages() async {
+    final List<XFile> images = await _picker.pickMultiImage(
+      imageQuality: 20, 
+    );
+
+    if (images.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
     try {
-      final List<XFile> pickedImages = await _picker.pickMultiImage();
-      if (pickedImages.isNotEmpty) {
-        setState(() {
-          _images.addAll(pickedImages);
+      final String userId = _auth.currentUser?.uid ?? 'unknown';
+      
+      for (var image in images) {
+        final File file = File(image.path);
+        final Uint8List bytes = await file.readAsBytes();
+        String base64String = base64Encode(bytes);
+
+        await _firestore.collection('images').add({
+          'base64String': base64String,
+          'userId': userId,
+          'createdAt': FieldValue.serverTimestamp(),
         });
       }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã tải lên ${images.length} ảnh thành công!')),
+        );
+      }
     } catch (e) {
-      debugPrint("Lỗi khi chọn ảnh: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Thoát chế độ chọn
-  void _cancelSelection() {
-    setState(() {
-      _isSelectionMode = false;
-      _selectedIndexes.clear();
-    });
+  Future<void> _deleteSelectedImages() async {
+    try {
+      for (String id in _selectedIds) {
+        await _firestore.collection('images').doc(id).delete();
+      }
+      setState(() {
+        _selectedIds.clear();
+        _isSelectionMode = false;
+      });
+    } catch (e) {
+      debugPrint("Lỗi khi xóa: $e");
+    }
   }
 
-  // Chọn tất cả ảnh
   void _selectAll() {
     setState(() {
-      _selectedIndexes.clear();
-      for (int i = 0; i < _images.length; i++) {
-        _selectedIndexes.add(i);
-      }
-    });
-  }
-
-  // Xử lý xóa các ảnh đã chọn và cập nhật danh sách
-  void _deleteSelected() {
-    if (_selectedIndexes.isEmpty) return;
-
-    setState(() {
-      // Sắp xếp index từ lớn đến bé để xóa chính xác
-      List<int> sortedIndices = _selectedIndexes.toList()..sort((a, b) => b.compareTo(a));
-
-      for (var index in sortedIndices) {
-        _images.removeAt(index);
-      }
-
-      _selectedIndexes.clear();
-      _isSelectionMode = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã xóa các ảnh thành công')),
-    );
-  }
-
-  // Đảo ngược trạng thái chọn của một ảnh
-  void _toggleSelection(int index) {
-    setState(() {
-      if (_selectedIndexes.contains(index)) {
-        _selectedIndexes.remove(index);
-      } else {
-        _selectedIndexes.add(index);
+      for (var doc in _currentDocs) {
+        _selectedIds.add(doc.id);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF7F7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ===== TOP INFO =====
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Avatar
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/parent.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.person, size: 50),
-                      ),
-                    ),
-                  ),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        final userName = authProvider.userModel?.name ?? "Người dùng";
+        final String? avatarBase64 = authProvider.userModel?.avatar;
 
-                  const SizedBox(width: 12),
+        return Scaffold(
+          backgroundColor: const Color(0xFFFFF7F7),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildTopInfo(userName, avatarBase64),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _imageStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Center(child: Text("Lỗi: ${snapshot.error}"));
+                      }
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      _currentDocs = snapshot.data!.docs.toList();
+                      _currentDocs.sort((a, b) {
+                        final aData = a.data() as Map<String, dynamic>;
+                        final bData = b.data() as Map<String, dynamic>;
+                        final aTime = aData['createdAt'] as Timestamp?;
+                        final bTime = bData['createdAt'] as Timestamp?;
+                        if (aTime == null || bTime == null) return 0;
+                        return bTime.compareTo(aTime);
+                      });
 
-                  // Name + Age + Buttons
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Bố: Nguyễn Văn A',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
+                      if (_currentDocs.isEmpty) {
+                        return const Center(child: Text("Album trống. Nhấn + để thêm ảnh."));
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: GridView.builder(
+                          itemCount: _currentDocs.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          'Tuổi: 80',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black54,
-                          ),
-                        ),
+                          itemBuilder: (context, index) {
+                            final doc = _currentDocs[index];
+                            final String id = doc.id;
+                            final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                            final String base64Str = data['base64String'] ?? '';
+                            bool isSelected = _selectedIds.contains(id);
 
-                        // HÀNG NÚT ĐIỀU KHIỂN
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: _isSelectionMode
-                            ? [
-                                // Nút Xóa (Thùng rác)
-                                IconButton(
-                                  onPressed: _selectedIndexes.isEmpty ? null : _deleteSelected,
-                                  icon: Icon(
-                                    Icons.delete_outline,
-                                    color: _selectedIndexes.isEmpty ? Colors.grey : Colors.red,
-                                    size: 28,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                // Nút Chọn tất cả
-                                TextButton(
-                                  onPressed: _selectAll,
-                                  child: const Text('Chọn tất cả', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                                ),
-                                // Nút Hủy
-                                TextButton(
-                                  onPressed: _cancelSelection,
-                                  child: const Text('Hủy', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                                ),
-                              ]
-                            : [
-                                // Nút Chọn bình thường
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() => _isSelectionMode = true);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            return GestureDetector(
+                              onTap: () {
+                                if (_isSelectionMode) {
+                                  setState(() {
+                                    if (isSelected) _selectedIds.remove(id);
+                                    else _selectedIds.add(id);
+                                  });
+                                }
+                              },
+                              child: Stack(
+                                children: [
+                                  Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: isSelected ? Border.all(color: Colors.blue, width: 3) : null,
                                     ),
-                                    child: const Text(
-                                      'Chọn',
-                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.memory(
+                                        base64Decode(base64Str),
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        gaplessPlayback: true,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Icon(Icons.more_horiz, size: 28, color: Colors.black54),
-                              ],
+                                  if (isSelected)
+                                    const Center(child: Icon(Icons.check_circle, color: Colors.blue, size: 30)),
+                                ],
+                              ),
+                            );
+                          },
                         ),
-                      ],
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (_isLoading) const Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: CircularProgressIndicator(),
+                ),
+                if (!_isSelectionMode)
+                  GestureDetector(
+                    onTap: _pickAndUploadImages,
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                      ),
+                      child: const Icon(Icons.add, size: 26),
                     ),
                   ),
-                ],
-              ),
+                const SizedBox(height: 16),
+                _buildFooter(userName),
+                const SizedBox(height: 16),
+              ],
             ),
+          ),
+        );
+      }
+    );
+  }
 
-            const SizedBox(height: 10),
-
-            // ===== GRID IMAGES =====
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _images.isEmpty
-                  ? const Center(child: Text("Album trống. Nhấn + để thêm ảnh."))
-                  : GridView.builder(
-                  itemCount: _images.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+  Widget _buildTopInfo(String userName, String? avatarBase64) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 40,
+            backgroundColor: const Color(0xFFFFC1A8),
+            backgroundImage: (avatarBase64 != null && avatarBase64.isNotEmpty)
+                ? MemoryImage(base64Decode(avatarBase64))
+                : null,
+            child: (avatarBase64 == null || avatarBase64.isEmpty)
+                ? const Icon(Icons.person, size: 50, color: Colors.white)
+                : null,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  height: 80, 
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      userName,
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  itemBuilder: (context, index) {
-                    bool isSelected = _selectedIndexes.contains(index);
-
-                    return GestureDetector(
-                      onTap: () {
-                        if (_isSelectionMode) {
-                          _toggleSelection(index);
-                        }
-                      },
-                      child: Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: isSelected
-                                ? Border.all(color: Colors.blue, width: 3)
-                                : null,
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.file(
-                                File(_images[index].path),
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.image),
-                              ),
-                            ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: _isSelectionMode
+                      ? [
+                          TextButton(
+                            onPressed: _selectAll, 
+                            child: const Text("Chọn tất cả", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold))
                           ),
-                          // Overlay mờ và icon check khi được chọn
-                          if (isSelected)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.check_circle, color: Colors.white, size: 30),
-                              ),
-                            ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: _selectedIds.isEmpty ? Colors.grey : Colors.red),
+                            onPressed: _selectedIds.isEmpty ? null : _deleteSelectedImages,
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _isSelectionMode = false;
+                                _selectedIds.clear();
+                              });
+                            }, 
+                            child: const Text("Hủy", style: TextStyle(color: Colors.red))
+                          ),
+                        ]
+                      : [
+                          TextButton(onPressed: () => setState(() => _isSelectionMode = true), child: const Text("Chọn")),
+                          const Icon(Icons.more_horiz),
                         ],
-                      ),
-                    );
-                  },
                 ),
-              ),
+              ],
             ),
-
-            const SizedBox(height: 14),
-
-            // ===== ADD IMAGE BUTTON =====
-            if (!_isSelectionMode)
-              GestureDetector(
-                onTap: _pickImages, // Gọi hàm mở album ảnh
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 4,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.add, size: 26),
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // ===== FOOTER =====
-            Text(
-              _isSelectionMode
-                ? 'Đã chọn ${_selectedIndexes.length} mục'
-                : '${_images.length} ảnh, 4 video\nDo Nguyễn Văn B tạo',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.black54,
-                fontSize: 12,
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _buildFooter(String userName) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _imageStream,
+      builder: (context, snapshot) {
+        int count = snapshot.hasData ? snapshot.data!.docs.length : 0;
+        return Text(
+          _isSelectionMode ? 'Đã chọn ${_selectedIds.length} mục' : '$count ảnh\nDo $userName tạo',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.black54, fontSize: 12),
+        );
+      },
+    );
+  }
 }
-
-

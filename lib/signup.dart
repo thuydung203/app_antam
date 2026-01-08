@@ -38,19 +38,16 @@ class _SignUpPageState extends State<SignUpPage> {
     setState(() => _isLoading = true);
     
     try {
-      // Mặc định tạo user mới là Parent, user có thể đổi sau hoặc logic khác tùy app
-      // Ở đây tạm thời để role mặc định 'parent'
+      // Đã sửa: Chỉ truyền 3 tham số theo định nghĩa mới của AuthProvider
       await Provider.of<AuthProvider>(context, listen: false).signUp(
         _emailCtrl.text.trim(),
         _passCtrl.text,
-        'parent', // Role mặc định
         _nameCtrl.text.trim(),
       );
 
       if (!mounted) return;
 
-      // Đăng ký thành công -> Vào trang chọn Role hoặc Home
-      // Thường thì vào RoleSelection để họ xác nhận lại hoặc chọn luồng tiếp
+      // Đăng ký thành công -> Vào trang chọn vai trò (RoleSelectionPage)
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const RoleSelectionPage()),

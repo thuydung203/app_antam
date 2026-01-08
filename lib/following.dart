@@ -1,15 +1,6 @@
 import 'package:antam_app/add_follower.dart';
-import 'package:antam_app/children_home.dart';
+import 'package:antam_app/main_navigation.dart';
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: FollowPage(),
-    ),
-  );
-}
 
 class FollowPage extends StatelessWidget {
   const FollowPage({super.key});
@@ -63,24 +54,28 @@ class FollowPage extends StatelessWidget {
 
           // ===== CARD CHA =====
           _personCard(
+            context: context,
             image: "assets/images/parent.png",
             name: "Bố: Nguyễn Văn A",
             age: "Tuổi: 80",
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ChildrenHomePage(),
-                ),
-              );
+            personData: {
+              "name": "Bố: Nguyễn Văn A",
+              "age": 80,
+              "avatar": null,
             },
           ),
 
           // ===== CARD MẸ =====
           _personCard(
+            context: context,
             image: "assets/images/children.png",
             name: "Mẹ: Nguyễn Thị A",
             age: "Tuổi: 70",
+            personData: {
+              "name": "Mẹ: Nguyễn Thị A",
+              "age": 70,
+              "avatar": null,
+            },
           ),
         ],
       ),
@@ -101,15 +96,24 @@ class FollowPage extends StatelessWidget {
     );
   }
 
-  // ===== PERSON CARD (ĐÃ SỬA) =====
+  // ===== PERSON CARD (KHÔI PHỤC GIAO DIỆN CŨ) =====
   Widget _personCard({
+    required BuildContext context,
     required String image,
     required String name,
     required String age,
-    VoidCallback? onTap, // ✅ THÊM onTap
+    required Map<String, dynamic> personData,
   }) {
     return InkWell(
-      onTap: onTap, // ✅ XỬ LÝ CLICK
+      onTap: () {
+        // ĐIỀU HƯỚNG VÀO HỆ THỐNG TAB VỚI DỮ LIỆU NGƯỜI ĐƯỢC CHỌN
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MainNavigation(selectedPerson: personData),
+          ),
+        );
+      },
       borderRadius: BorderRadius.circular(18),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),

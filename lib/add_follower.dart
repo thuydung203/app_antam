@@ -1,30 +1,18 @@
+import 'package:antam_app/providers/auth_provider.dart';
+import 'package:antam_app/services/database_service.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  // Đã đổi tên class trong runApp
-  runApp(const AddFollowerPage());
-}
-
-// Đã đổi tên class từ AddFollowerApp thành AddFollowerPage
 class AddFollowerPage extends StatelessWidget {
   const AddFollowerPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Thêm Người Theo Dõi',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blueGrey,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        scaffoldBackgroundColor: const Color(0xFFFEECE9), // Màu nền hồng nhạt
-      ),
-      home: const AddFollowerScreen(),
-    );
+    return const AddFollowerScreen();
   }
 }
 
-// Màn hình chính đã được chuyển sang StatefulWidget (giữ nguyên tên)
 class AddFollowerScreen extends StatefulWidget {
   const AddFollowerScreen({super.key});
 
@@ -33,20 +21,92 @@ class AddFollowerScreen extends StatefulWidget {
 }
 
 class _AddFollowerScreenState extends State<AddFollowerScreen> {
-  // Màu sắc chủ đạo (Giữ nguyên)
   final Color _primaryColor = const Color(0xFF3C4043);
   final Color _placeholderColor = const Color(0xFFA19A9A);
   final Color _buttonColor = const Color(0xFFFFA694);
 
-  // Khai báo Controllers để quản lý dữ liệu đầu vào
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _relationshipController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _accountController = TextEditingController();
 
+  DateTime? _selectedDate;
+  bool _isSaving = false;
 
-  // Widget Helper cho các trường nhập liệu
+  // Hàm chọn ngày sinh và tính tuổi
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(1970),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _dobController.text = DateFormat('dd/MM/yyyy').format(picked);
+        // Tính tuổi
+        int age = DateTime.now().year - picked.year;
+        if (DateTime.now().month < picked.month || 
+           (DateTime.now().month == picked.month && DateTime.now().day < picked.day)) {
+          age--;
+        }
+        _ageController.text = age.toString();
+      });
+    }
+  }
+
+  // Hàm xử lý lưu vào Firestore
+  Future<void> _handleSave() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final user = auth.userModel;
+
+    if (_nameController.text.isEmpty || _accountController.text.isEmpty || _selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng điền đầy đủ thông tin")),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final dbService = DatabaseService();
+      
+      // Tạo map dữ liệu người theo dõi mới
+      final Map<String, dynamic> followerData = {
+        'name': _nameController.text.trim(),
+        'relationship': _relationshipController.text.trim(),
+        'birthDate': _selectedDate,
+        'age': int.parse(_ageController.text),
+        'accountEmail': _accountController.text.trim(),
+        'addedBy': user?.uid,
+        'createdAt': DateTime.now(),
+      };
+
+      // Lưu vào collection 'following_list' (Danh sách những người người dùng đang theo dõi)
+      await dbService.updateUserInfo(user!.uid, {
+        'following': [followerData] // Đây là ví dụ, thực tế nên dùng arrayUnion
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Thêm người thân thành công!")),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   Widget _buildTextFieldRow({
     required String label,
     String? placeholder,
@@ -54,60 +114,41 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
     bool readOnly = false,
     Widget? suffixIcon,
     TextInputType keyboardType = TextInputType.text,
-    VoidCallback? onTap, // Thêm onTap cho trường readOnly
+    VoidCallback? onTap,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          // Nhãn
           SizedBox(
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
-                color: _primaryColor,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: _primaryColor, fontSize: 18, fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(width: 10),
-          // Ô nhập liệu
           Expanded(
             child: Container(
               height: 52,
               decoration: BoxDecoration(
-                color: const Color(0x49B2A5A5).withValues(alpha: 0.3),
+                color: const Color(0x49B2A5A5).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 15),
               child: TextFormField(
-                controller: controller, // Sử dụng Controller
+                controller: controller,
                 readOnly: readOnly,
+                onTap: onTap,
                 keyboardType: keyboardType,
-                style: TextStyle(
-                  color: _primaryColor,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(color: _primaryColor, fontSize: 18, fontWeight: FontWeight.w500),
                 decoration: InputDecoration(
                   hintText: placeholder,
-                  hintStyle: TextStyle(
-                    color: _placeholderColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  hintStyle: TextStyle(color: _placeholderColor, fontSize: 18, fontWeight: FontWeight.w500),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.zero,
                   suffixIcon: suffixIcon,
-                  suffixIconConstraints: const BoxConstraints(
-                    minWidth: 0,
-                    minHeight: 0,
-                  ),
                 ),
-                onTap: onTap, // Sử dụng onTap đã truyền vào
               ),
             ),
           ),
@@ -118,7 +159,6 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
 
   @override
   void dispose() {
-    // Giải phóng Controller khi widget bị hủy
     _nameController.dispose();
     _relationshipController.dispose();
     _dobController.dispose();
@@ -134,37 +174,42 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: <Widget>[
-            // --- Header và Ảnh đại diện ---
             _buildHeader(context),
-
-            // --- Form Nhập liệu ---
             Padding(
               padding: const EdgeInsets.all(25.0),
               child: Column(
                 children: <Widget>[
-                  // Họ và tên
                   _buildTextFieldRow(
                     label: 'Họ và tên:',
-                    placeholder: 'Nguyen Văn A',
+                    placeholder: 'Nguyễn Văn A',
                     controller: _nameController,
                   ),
-                  // Quan hệ
                   _buildTextFieldRow(
                     label: 'Quan hệ:',
+                    placeholder: 'Bố/Mẹ/Ông/Bà...',
                     controller: _relationshipController,
                   ),
-                  // Số tuổi
+                  _buildTextFieldRow(
+                    label: 'Ngày sinh:',
+                    placeholder: 'Chọn ngày sinh',
+                    controller: _dobController,
+                    readOnly: true,
+                    onTap: () => _selectDate(context),
+                    suffixIcon: const Icon(Icons.calendar_today, size: 20),
+                  ),
                   _buildTextFieldRow(
                     label: 'Số tuổi:',
                     placeholder: '??',
                     controller: _ageController,
-                    keyboardType: TextInputType.number,
                     readOnly: true,
                   ),
-
-                  const SizedBox(height: 60),
-
-                  // --- Nút Thêm người theo dõi ---
+                  _buildTextFieldRow(
+                    label: 'Tài khoản:',
+                    placeholder: 'Email tài khoản',
+                    controller: _accountController,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 40),
                   _buildAddButton(),
                 ],
               ),
@@ -175,78 +220,75 @@ class _AddFollowerScreenState extends State<AddFollowerScreen> {
     );
   }
 
-  // Helper Widget cho Header (Giữ nguyên giao diện)
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 40, bottom: 20),
-      color: const Color(0x70FFCEBF),
+      color: const Color(0xFFFFCEBF).withValues(alpha: 0.4),
       child: Column(
         children: [
-          // App Bar (Mũi tên và Tìm kiếm)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.black,
-                    size: 30,
-                  ),
+                  icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 25),
                   onPressed: () => Navigator.pop(context),
                 ),
+                const Text("THÔNG TIN", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 48),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          // Ảnh đại diện
-          Container(
-            width: 150,
-            height: 150,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.blueGrey, width: 2),
-              color: Colors.white,
-              image: const DecorationImage(
-                image: NetworkImage(
-                  "https://via.placeholder.com/150/F5F5F5/808080?text=Profile",
+          Stack(
+            children: [
+              Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  color: Colors.white,
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
                 ),
-                fit: BoxFit.cover,
+                child: const CircleAvatar(
+                  backgroundColor: Color(0xFFF5F5F5),
+                  child: Icon(Icons.person, size: 80, color: Colors.grey),
+                ),
               ),
-            ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: CircleAvatar(
+                  backgroundColor: _buttonColor,
+                  radius: 20,
+                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // Helper Widget cho Nút
   Widget _buildAddButton() {
     return ElevatedButton(
-      onPressed: () {
-        // Lấy dữ liệu từ Controllers khi nút được nhấn
-        debugPrint('Tên: ${_nameController.text}');
-        debugPrint('Quan hệ: ${_relationshipController.text}');
-        debugPrint('Ngày sinh: ${_dobController.text}');
-        debugPrint('Tuổi: ${_ageController.text}');
-        debugPrint('Tài khoản: ${_accountController.text}');
-        // Thêm logic xử lý API/lưu dữ liệu tại đây
-      },
+      onPressed: _isSaving ? null : _handleSave,
       style: ElevatedButton.styleFrom(
         backgroundColor: _buttonColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        minimumSize: const Size(289, 67),
+        minimumSize: const Size(double.infinity, 60),
+        elevation: 0,
       ),
-      child: const Text(
-        'Thêm người theo dõi',
-        style: TextStyle(
-          color: Colors.black,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      child: _isSaving 
+        ? const CircularProgressIndicator(color: Colors.black)
+        : const Text(
+            'Thêm người thân',
+            style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+          ),
     );
   }
 }

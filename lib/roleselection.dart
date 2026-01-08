@@ -1,6 +1,8 @@
-import 'package:antam_app/main_navigation.dart';
-import 'package:antam_app/parent_home.dart';
+import 'package:antam_app/following.dart';
+import 'package:antam_app/parent_navigation.dart';
+import 'package:antam_app/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class RoleSelectionPage extends StatefulWidget {
   const RoleSelectionPage({super.key});
@@ -12,38 +14,48 @@ class RoleSelectionPage extends StatefulWidget {
 class _RoleSelectionPageState extends State<RoleSelectionPage> {
   String selectedRole = "";
   String pressedRole = "";
+  bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            const SizedBox(height: 40),
-            Image.asset("assets/images/logo_removeBG.png", width: 500, errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 100)),
-            const SizedBox(height: 20),
-            const Text(
-              "CHỌN VAI TRÒ",
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 50),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Column(
               children: [
-                _buildAnimatedRoleButton(
-                  image: "assets/images/children.png",
-                  title: "CON",
-                  value: "child",
+                const SizedBox(height: 40),
+                Image.asset("assets/images/logo_removeBG.png", width: 500, errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 100)),
+                const SizedBox(height: 20),
+                const Text(
+                  "CHỌN VAI TRÒ",
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(width: 40),
-                _buildAnimatedRoleButton(
-                  image: "assets/images/parent.png",
-                  title: "CHA MẸ",
-                  value: "parent",
+                const SizedBox(height: 50),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildAnimatedRoleButton(
+                      image: "assets/images/children.png",
+                      title: "CON",
+                      value: "child",
+                    ),
+                    const SizedBox(width: 40),
+                    _buildAnimatedRoleButton(
+                      image: "assets/images/parent.png",
+                      title: "CHA MẸ",
+                      value: "parent",
+                    ),
+                  ],
                 ),
               ],
             ),
+            if (_isSaving)
+              Container(
+                color: Colors.black26,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
           ],
         ),
       ),
@@ -68,7 +80,7 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
             width: 110,
             height: 110,
             child: ElevatedButton(
-              onPressed: () async {
+              onPressed: _isSaving ? null : () async {
                 setState(() {
                   pressedRole = value;
                 });
@@ -80,18 +92,25 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                 setState(() {
                   pressedRole = "";
                   selectedRole = value;
+                  _isSaving = true;
                 });
 
-                if (value == "child") {
-                  Navigator.push( // Sử dụng push để có thể quay lại
-                    context,
-                    MaterialPageRoute(builder: (context) => const MainNavigation()),
-                  );
-                } else if (value == "parent") {
-                  Navigator.push( // Sử dụng push để có thể quay lại
-                    context,
-                    MaterialPageRoute(builder: (context) => const ParentHomePage()),
-                  );
+                // LƯU VAI TRÒ VÀO DATABASE VĨNH VIỄN
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                await authProvider.updateUserRole(value);
+
+                if (mounted) {
+                  if (value == "child") {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FollowPage()),
+                    );
+                  } else if (value == "parent") {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ParentNavigation()),
+                    );
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(

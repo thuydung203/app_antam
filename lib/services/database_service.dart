@@ -31,13 +31,19 @@ class DatabaseService {
     return null;
   }
 
+  // Cập nhật thông tin người dùng linh hoạt
+  Future<void> updateUserInfo(String uid, Map<String, dynamic> data) async {
+    await _usersCollection.doc(uid).update(data);
+  }
+
+  Future<void> updateUserName(String uid, String newName) async {
+    await _usersCollection.doc(uid).update({'name': newName});
+  }
+
   // --- Medicine Operations ---
 
   Future<void> addMedicine(MedicineModel medicine) async {
-    // Let Firestore generate ID if not provided, or use specific ID if critical
-    // Here we use doc() to generate ID and set it
     DocumentReference docRef = _medicinesCollection.doc();
-    // We might need to update the model with the generated ID if passed empty
     await docRef.set(medicine.toMap());
   }
   
@@ -73,7 +79,6 @@ class DatabaseService {
   Stream<List<CheckupModel>> getCheckups(String userId) {
     return _checkupsCollection
         .where('userId', isEqualTo: userId)
-        // .orderBy('date', descending: true) // Tạm tắt để tránh lỗi Index khi chưa cấu hình
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
