@@ -1,31 +1,39 @@
+import 'package:antam_app/models/checkin_model.dart';
+import 'package:antam_app/providers/auth_provider.dart';
+import 'package:antam_app/services/database_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
-class CheckInHistoryPage extends StatelessWidget {
+class CheckInHistoryPage extends StatefulWidget {
   const CheckInHistoryPage({super.key});
 
+  @override
+  State<CheckInHistoryPage> createState() => _CheckInHistoryPageState();
+}
+
+class _CheckInHistoryPageState extends State<CheckInHistoryPage> {
+  final DatabaseService _dbService = DatabaseService();
+  DateTime _currentMonth = DateTime.now();
+
   // Widget riêng để xây dựng từng ô ngày trong lịch
-  Widget _buildDayCell(String day, bool isChecked) {
+  Widget _buildDayCell(int day, bool isChecked) {
     return Column(
-      // Sửa lỗi Overflow: Căn giữa và giảm kích thước các thành phần.
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Icon Check (Nếu đã check-in) - Giảm size từ 28 xuống 20
         if (isChecked)
           const Icon(Icons.check_circle, color: Colors.green, size: 20)
         else
-          // SizedBox giữ khoảng cách tương ứng với kích thước Icon
           const SizedBox(height: 20),
-
-        // Ngày (Giảm font size từ 20 xuống 16 và cố định height)
         Text(
-          day,
+          day.toString(),
           style: const TextStyle(
             color: Colors.black,
             fontSize: 16,
             fontFamily: 'Inter',
             fontWeight: FontWeight.w400,
-            height: 1.0, // Đảm bảo chiều cao dòng không bị giãn nở
+            height: 1.0,
           ),
         ),
       ],
@@ -33,57 +41,16 @@ class CheckInHistoryPage extends StatelessWidget {
   }
 
   // Widget xây dựng toàn bộ phần Lịch
-  Widget _buildCalendar() {
-    // Dữ liệu ngày (T2 bắt đầu từ ngày 1)
+  Widget _buildCalendar(List<CheckInModel> checkins) {
     const List<String> weekdays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-
-    // 31 ngày của Tháng 12/2025
-    const List<String> days = [
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
-      '7',
-      '8',
-      '9',
-      '10',
-      '11',
-      '12',
-      '13',
-      '14',
-      '15',
-      '16',
-      '17',
-      '18',
-      '19',
-      '20',
-      '21',
-      '22',
-      '23',
-      '24',
-      '25',
-      '26',
-      '27',
-      '28',
-      '29',
-      '30',
-      '31',
-    ];
-
-    // Trạng thái check-in (true = Đã check-in)
-    const List<bool> checkInStatus = [
-      true, true, true, true, true, true, false, // Ngày 1-7
-      false, false, false, false, false, false, false, // Ngày 8-14
-      false, false, false, false, false, false, false,
-      false, false, false, false, false, false, false,
-      false, false, false,
-    ];
+    
+    // Get first day of month and last day
+    DateTime firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    int daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    int firstWeekday = firstDayOfMonth.weekday; // 1=Mon, 7=Sun
 
     return Column(
       children: [
-        // Hàng Tiêu đề Ngày trong tuần
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: weekdays
@@ -99,10 +66,7 @@ class CheckInHistoryPage extends StatelessWidget {
               )
               .toList(),
         ),
-
         const SizedBox(height: 10),
-
-        // Lưới Ngày
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -110,33 +74,35 @@ class CheckInHistoryPage extends StatelessWidget {
             crossAxisCount: 7,
             mainAxisSpacing: 18.0,
             crossAxisSpacing: 18.0,
-            childAspectRatio: 1.0, // Tỷ lệ 1:1 cho mỗi ô
+            childAspectRatio: 1.0,
           ),
-          itemCount: days.length,
+          itemCount: daysInMonth + (firstWeekday - 1),
           itemBuilder: (context, index) {
-            final day = days[index];
-            final status = index < checkInStatus.length
-                ? checkInStatus[index]
-                : false;
-
-            return _buildDayCell(day, status);
+            if (index < firstWeekday - 1) {
+              return const SizedBox.shrink();
+            }
+            int day = index - (firstWeekday - 2);
+            bool isChecked = checkins.any((c) => 
+              c.date.day == day && 
+              c.date.month == _currentMonth.month && 
+              c.date.year == _currentMonth.year
+            );
+            return _buildDayCell(day, isChecked);
           },
         ),
       ],
     );
   }
 
-  // Widget xây dựng Tỉ lệ tuân thủ và Thanh Progress
   Widget _buildComplianceSection(int percentage) {
-    const Color activeColor = Color(0xFFFFA694); // Màu cam đậm
-    const Color inactiveColor = Color(0x66FFD7C2); // Màu cam nhạt
+    const Color activeColor = Color(0xFFFFA694);
+    const Color inactiveColor = Color(0x66FFD7C2);
 
     return Container(
       padding: const EdgeInsets.all(20),
-      // Giảm padding ngang của Container để khớp với thiết kế.
       margin: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        color: const Color(0x33FFCEBF), // Màu nền tổng thể cho section
+        color: const Color(0x33FFCEBF),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Column(
@@ -165,13 +131,9 @@ class CheckInHistoryPage extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 15),
-
-          // Thanh tiến trình
           Stack(
             children: [
-              // Thanh nền (inactive)
               Container(
                 width: double.infinity,
                 height: 37,
@@ -180,7 +142,6 @@ class CheckInHistoryPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              // Thanh tiến trình (active)
               LayoutBuilder(
                 builder: (context, constraints) {
                   return Container(
@@ -202,68 +163,72 @@ class CheckInHistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final user = auth.userModel;
+    final parentId = user?.parentId ?? user?.uid ?? "";
+    final monthStr = DateFormat('MM/yyyy').format(_currentMonth);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8F9),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF8F9),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
+      body: StreamBuilder<List<CheckInModel>>(
+        stream: _dbService.getCheckIns(parentId, _currentMonth),
+        builder: (context, snapshot) {
+          final checkins = snapshot.data ?? [];
+          int percentage = 0;
+          if (_currentMonth.month == DateTime.now().month && _currentMonth.year == DateTime.now().year) {
+             int daysPassed = DateTime.now().day;
+             if (daysPassed > 0) {
+               percentage = ((checkins.length / daysPassed) * 100).round();
+               if (percentage > 100) percentage = 100;
+             }
+          }
 
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 10),
-
-              // --- TIÊU ĐỀ ---
-              const Center(
-                child: Text(
-                  'LỊCH SỬ CHECK-IN',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24,
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w700,
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  const Center(
+                    child: Text(
+                      'LỊCH SỬ CHECK-IN',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 24,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 30),
+                  Text(
+                    'Tháng $monthStr',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 24,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _buildCalendar(checkins),
+                  const SizedBox(height: 50),
+                  _buildComplianceSection(percentage),
+                  const SizedBox(height: 100),
+                ],
               ),
-
-              const SizedBox(height: 30),
-
-              // --- THÁNG ---
-              const Text(
-                'Tháng 12/2025',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
-                  fontFamily: 'Inter',
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // --- LỊCH ---
-              _buildCalendar(),
-
-              const SizedBox(height: 50),
-
-              // --- TỈ LỆ TUÂN THỦ VÀ THANH PROGRESS ---
-              _buildComplianceSection(80),
-
-              const SizedBox(height: 100),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

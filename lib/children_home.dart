@@ -12,6 +12,8 @@ import 'package:intl/intl.dart';
 
 import 'models/medicine_model.dart';
 import 'models/checkup_model.dart';
+import 'models/checkin_model.dart';
+import 'models/user_model.dart';
 import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
 
@@ -98,16 +100,16 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     final userModel = authProvider.userModel;
 
     // Ưu tiên hiển thị người được chọn từ FollowPage, nếu không có thì hiện chủ tài khoản
-    final String displayName = widget.selectedPerson != null 
-        ? widget.selectedPerson!['name'] 
+    final String displayName = widget.selectedPerson != null
+        ? widget.selectedPerson!['name']
         : (userModel?.name ?? "Người dùng");
-    
-    final int displayAge = widget.selectedPerson != null 
-        ? widget.selectedPerson!['age'] 
+
+    final int displayAge = widget.selectedPerson != null
+        ? widget.selectedPerson!['age']
         : (userModel?.age ?? 0);
 
-    final String? avatarBase64 = widget.selectedPerson != null 
-        ? widget.selectedPerson!['avatar'] 
+    final String? avatarBase64 = widget.selectedPerson != null
+        ? widget.selectedPerson!['avatar']
         : userModel?.avatar;
 
     if (user == null) {
@@ -133,7 +135,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
               title: "TRẠNG THÁI UỐNG THUỐC",
               onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateMedicinePage())),
             ),
-            
+
             StreamBuilder<List<MedicineModel>>(
               stream: _dbService.getMedicines(user.uid),
               builder: (context, snapshot) {
@@ -148,7 +150,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
               title: "LỊCH TÁI KHÁM",
               onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateCheckupPage())),
             ),
-            
+
             StreamBuilder<List<CheckupModel>>(
               stream: _dbService.getCheckups(user.uid),
               builder: (context, snapshot) {
