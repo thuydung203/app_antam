@@ -122,8 +122,28 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: followingList.length,
                 itemBuilder: (context, index) {
-                  final person = followingList[index] as Map<String, dynamic>;
-                  return _personCard(context, person);
+                  final followingData = followingList[index] as Map<String, dynamic>;
+                  final String parentUid = followingData['uid'] ?? ''; // Sửa từ 'parentId' thành 'uid'
+                  
+                  if (parentUid.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  // Fetch thông tin thực tế của parent từ Firestore
+                  return StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(parentUid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || !snapshot.data!.exists) {
+                        return const SizedBox.shrink();
+                      }
+                      
+                      final parentData = snapshot.data!.data() as Map<String, dynamic>;
+                      return _personCard(context, parentData, parentUid);
+                    },
+                  );
                 },
               ),
             
@@ -171,18 +191,33 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
     );
   }
 
-  Widget _personCard(BuildContext context, Map<String, dynamic> personData) {
+  Widget _personCard(BuildContext context, Map<String, dynamic> personData, String parentUid) {
     final String name = personData['name'] ?? "Chưa rõ";
-    final String age = "Tuổi: ${personData['age'] ?? '--'}";
     final String? avatarBase64 = personData['avatar'];
+    
+    // Tính tuổi từ birthDate
+    int age = 0;
+    if (personData['birthDate'] != null) {
+      final birthDate = (personData['birthDate'] as Timestamp).toDate();
+      final now = DateTime.now();
+      age = now.year - birthDate.year;
+      if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
+        age--;
+      }
+    }
+    final String ageText = "Tuổi: ${age > 0 ? age : '--'}";
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: InkWell(
         onTap: () {
+          // Thêm uid vào personData để sử dụng khi navigate
+          final dataWithId = Map<String, dynamic>.from(personData);
+          dataWithId['uid'] = parentUid;
+          
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => MainNavigation(selectedPerson: personData)),
+            MaterialPageRoute(builder: (context) => MainNavigation(selectedPerson: dataWithId)),
           );
         },
         borderRadius: BorderRadius.circular(18),
@@ -210,7 +245,7 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
                 children: [
                   Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 5),
-                  Text(age, style: const TextStyle(fontSize: 14)),
+                  Text(ageText, style: const TextStyle(fontSize: 14)),
                 ],
               ),
               const Spacer(),
