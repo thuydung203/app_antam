@@ -1,25 +1,28 @@
-import 'package:antam_app/add_follower.dart';
+import 'dart:convert';
 import 'package:antam_app/main_navigation.dart';
+import 'package:antam_app/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class FollowPage extends StatelessWidget {
   const FollowPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.userModel;
+    
+    // Lấy danh sách những người đang theo dõi từ UserModel
+    final List<dynamic> followingList = user?.following ?? [];
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
-
-      // ===== APP BAR =====
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        automaticallyImplyLeading: false, // Tắt nút back mặc định về RoleSelection
+        title: const Text("DANH SÁCH THEO DÕI", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 16),
@@ -27,76 +30,36 @@ class FollowPage extends StatelessWidget {
           ),
         ],
       ),
-
-      // ===== BODY =====
       body: Column(
         children: [
           const SizedBox(height: 10),
-
-          // ===== LOGO =====
-          Image.asset(
-            "assets/images/logo_removeBG.png",
-            width: 500,
-          ),
-
+          Image.asset("assets/images/logo_removeBG.png", width: 300),
           const SizedBox(height: 10),
-
-          // ===== TITLE =====
-          const Text(
-            "BẠN ĐANG THEO DÕI:",
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
+          const Text("BẠN ĐANG THEO DÕI:", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           const SizedBox(height: 25),
-
-          // ===== CARD CHA =====
-          _personCard(
-            context: context,
-            image: "assets/images/parent.png",
-            name: "Bố: Nguyễn Văn A",
-            age: "Tuổi: 80",
-            personData: {
-              "name": "Bố: Nguyễn Văn A",
-              "age": 80,
-              "avatar": null,
-            },
-          ),
-
-          // ===== CARD MẸ =====
-          _personCard(
-            context: context,
-            image: "assets/images/children.png",
-            name: "Mẹ: Nguyễn Thị A",
-            age: "Tuổi: 70",
-            personData: {
-              "name": "Mẹ: Nguyễn Thị A",
-              "age": 70,
-              "avatar": null,
-            },
+          
+          Expanded(
+            child: followingList.isEmpty 
+              ? const Center(child: Text("Bạn chưa theo dõi ai.\nHãy nhấn nút + để thêm người thân.", textAlign: TextAlign.center))
+              : ListView.builder(
+                  itemCount: followingList.length,
+                  itemBuilder: (context, index) {
+                    final person = followingList[index] as Map<String, dynamic>;
+                    return _personCard(
+                      context: context,
+                      image: person['avatar'] != null ? "" : "assets/images/parent.png",
+                      name: person['name'] ?? "Chưa rõ",
+                      age: "Tuổi: ${person['age'] ?? '--'}",
+                      personData: person,
+                    );
+                  },
+                ),
           ),
         ],
-      ),
-
-      // ===== FLOATING ADD BUTTON =====
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF6EE7B7),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddFollowerPage(),
-            ),
-          );
-        },
-        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
 
-  // ===== PERSON CARD (KHÔI PHỤC GIAO DIỆN CŨ) =====
   Widget _personCard({
     required BuildContext context,
     required String image,
@@ -104,14 +67,13 @@ class FollowPage extends StatelessWidget {
     required String age,
     required Map<String, dynamic> personData,
   }) {
+    final String? avatarBase64 = personData['avatar'];
+
     return InkWell(
       onTap: () {
-        // ĐIỀU HƯỚNG VÀO HỆ THỐNG TAB VỚI DỮ LIỆU NGƯỜI ĐƯỢC CHỌN
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainNavigation(selectedPerson: personData),
-          ),
+          MaterialPageRoute(builder: (context) => MainNavigation(selectedPerson: personData)),
         );
       },
       borderRadius: BorderRadius.circular(18),
@@ -124,34 +86,25 @@ class FollowPage extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // AVATAR
             CircleAvatar(
               radius: 30,
               backgroundColor: Colors.white,
-              child: Image.asset(image, width: 40),
+              backgroundImage: (avatarBase64 != null && avatarBase64.isNotEmpty) 
+                  ? MemoryImage(base64Decode(avatarBase64)) 
+                  : null,
+              child: (avatarBase64 == null || avatarBase64.isEmpty) 
+                  ? Image.asset(image, width: 40) 
+                  : null,
             ),
-
             const SizedBox(width: 16),
-
-            // INFO
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 5),
-                Text(
-                  age,
-                  style: const TextStyle(fontSize: 14),
-                ),
+                Text(age, style: const TextStyle(fontSize: 14)),
               ],
             ),
-
             const Spacer(),
             const Icon(Icons.arrow_forward_ios, size: 16),
           ],

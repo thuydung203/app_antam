@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:antam_app/providers/auth_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 
 class ParentPairingPage extends StatefulWidget {
   const ParentPairingPage({super.key});
@@ -14,8 +17,8 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
   final TextEditingController _inputController = TextEditingController();
   bool _isInputEmpty = true;
   bool _isScanning = false;
+  bool _isConnecting = false;
 
-  // Khởi tạo controller cho camera
   final MobileScannerController cameraController = MobileScannerController(
     facing: CameraFacing.back,
     autoStart: false,
@@ -40,7 +43,75 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
     super.dispose();
   }
 
-  // Hàm bật tắt camera quét QR
+  // LOGIC KẾT NỐI CHÍNH
+  Future<void> _handleConnect() async {
+    final String code = _inputController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() => _isConnecting = true);
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final parent = authProvider.userModel;
+
+      if (parent == null) throw "Vui lòng đăng nhập lại.";
+
+      // 1. Tìm mã trong collection pairing_codes
+      final doc = await FirebaseFirestore.instance.collection('pairing_codes').doc(code).get();
+
+      if (!doc.exists) {
+        throw "Mã kết nối không hợp lệ hoặc đã hết hạn.";
+      }
+
+      final data = doc.data()!;
+      final String childId = data['childId'];
+      final DateTime expiresAt = (data['expiresAt'] as Timestamp).toDate();
+
+      // 2. Kiểm tra hết hạn
+      if (DateTime.now().isAfter(expiresAt)) {
+        throw "Mã đã hết hạn. Vui lòng yêu cầu mã mới từ con.";
+      }
+
+      // 3. Thực hiện kết nối hai chiều
+      // - Thêm con vào danh sách 'following' của cha mẹ
+      final Map<String, dynamic> childInfo = {
+        'uid': childId,
+        'name': data['childName'],
+        'avatar': data['childAvatar'],
+        'connectedAt': FieldValue.serverTimestamp(),
+      };
+
+      await FirebaseFirestore.instance.collection('users').doc(parent.uid).update({
+        'following': FieldValue.arrayUnion([childInfo])
+      });
+
+      // - Thêm ID cha mẹ vào 'parentId' của con (hoặc mảng liên kết)
+      await FirebaseFirestore.instance.collection('users').doc(childId).update({
+        'parentId': parent.uid
+      });
+
+      // 4. Xóa mã sau khi dùng xong
+      await FirebaseFirestore.instance.collection('pairing_codes').doc(code).delete();
+
+      if (mounted) {
+        await authProvider.reloadUserModel();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Kết nối thành công!")),
+        );
+        Navigator.pop(context); // Quay lại trang chủ
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isConnecting = false);
+    }
+  }
+
   void _toggleScanner() async {
     if (_isScanning) {
       await cameraController.stop();
@@ -78,7 +149,6 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
       ),
       body: Stack(
         children: [
-          // Giao diện chính khi không quét QR
           SingleChildScrollView(
             child: Column(
               children: [
@@ -99,7 +169,6 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
             ),
           ),
 
-          // Lớp Camera phủ lên khi đang quét
           if (_isScanning)
             Positioned.fill(
               child: Container(
@@ -119,11 +188,11 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
                               _isScanning = false;
                             });
                             cameraController.stop();
+                            _handleConnect(); // Tự động kết nối sau khi quét
                           }
                         }
                       },
                     ),
-                    // Khung ngắm
                     Center(
                       child: Container(
                         width: 260,
@@ -134,20 +203,15 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
                         ),
                       ),
                     ),
-                    const Positioned(
-                      bottom: 100,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Text(
-                          "Đang tìm mã QR...",
-                          style: TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                      ),
-                    )
                   ],
                 ),
               ),
+            ),
+          
+          if (_isConnecting)
+            Container(
+              color: Colors.black26,
+              child: const Center(child: CircularProgressIndicator(color: Color(0xFFFFA387))),
             ),
         ],
       ),
@@ -211,12 +275,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: _isInputEmpty
-                  ? null
-                  : () {
-                      debugPrint("Kết nối với mã: ${_inputController.text}");
-                      // Xử lý logic kết nối tại đây
-                    },
+              onPressed: _isInputEmpty || _isConnecting ? null : _handleConnect,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFA387),
                 disabledBackgroundColor: Colors.grey.shade300,

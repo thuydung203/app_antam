@@ -1,4 +1,4 @@
-import 'package:antam_app/following.dart';
+import 'package:antam_app/main_navigation.dart'; // Vào thẳng trang chủ
 import 'package:antam_app/parent_navigation.dart';
 import 'package:antam_app/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -95,15 +95,15 @@ class _RoleSelectionPageState extends State<RoleSelectionPage> {
                   _isSaving = true;
                 });
 
-                // LƯU VAI TRÒ VÀO DATABASE VĨNH VIỄN
                 final authProvider = Provider.of<AuthProvider>(context, listen: false);
                 await authProvider.updateUserRole(value);
 
                 if (mounted) {
                   if (value == "child") {
+                    // SAU KHI ĐĂNG KÝ XONG -> VÀO THẲNG TRANG CHỦ
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const FollowPage()),
+                      MaterialPageRoute(builder: (context) => const MainNavigation()),
                     );
                   } else if (value == "parent") {
                     Navigator.pushReplacement(

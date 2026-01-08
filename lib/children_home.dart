@@ -4,6 +4,7 @@ import 'package:antam_app/settings_page.dart';
 import 'package:antam_app/check_in_history.dart';
 import 'package:antam_app/create_medicine.dart';
 import 'package:antam_app/create_checkup.dart';
+import 'package:antam_app/following.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,13 +13,11 @@ import 'package:intl/intl.dart';
 
 import 'models/medicine_model.dart';
 import 'models/checkup_model.dart';
-import 'models/checkin_model.dart';
-import 'models/user_model.dart';
 import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
 
 class ChildrenHomePage extends StatefulWidget {
-  final Map<String, dynamic>? selectedPerson; // Nhận thông tin người được theo dõi
+  final Map<String, dynamic>? selectedPerson; 
 
   const ChildrenHomePage({super.key, this.selectedPerson});
 
@@ -96,24 +95,25 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.firebaseUser;
     final userModel = authProvider.userModel;
 
-    // Ưu tiên hiển thị người được chọn từ FollowPage, nếu không có thì hiện chủ tài khoản
-    final String displayName = widget.selectedPerson != null
-        ? widget.selectedPerson!['name']
+    // LOGIC HIỂN THỊ THÔNG MINH
+    // Nếu có người được chọn từ Following -> Hiện người đó
+    // Nếu không (lần đầu đăng ký) -> Hiện chính mình
+    final String displayName = widget.selectedPerson != null 
+        ? widget.selectedPerson!['name'] 
         : (userModel?.name ?? "Người dùng");
-
-    final int displayAge = widget.selectedPerson != null
-        ? widget.selectedPerson!['age']
+    
+    final int displayAge = widget.selectedPerson != null 
+        ? widget.selectedPerson!['age'] 
         : (userModel?.age ?? 0);
 
-    final String? avatarBase64 = widget.selectedPerson != null
-        ? widget.selectedPerson!['avatar']
+    final String? avatarBase64 = widget.selectedPerson != null 
+        ? widget.selectedPerson!['avatar'] 
         : userModel?.avatar;
 
-    if (user == null) {
-      return const Scaffold(body: Center(child: Text("Vui lòng đăng nhập")));
+    if (userModel == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -121,23 +121,25 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
-        leading: IconButton(
+        automaticallyImplyLeading: false, // Tắt nút back mặc định
+        leading: widget.selectedPerson != null ? IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context), // Quay về trang FollowPage
-        ),
+          onPressed: () => Navigator.pop(context), // Chỉ hiện nút back khi xem người khác
+        ) : null,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            _warningCard(),
             _userInfo(displayName, avatarBase64, displayAge),
 
             _sectionHeader(
               title: "TRẠNG THÁI UỐNG THUỐC",
               onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateMedicinePage())),
             ),
-
+            
             StreamBuilder<List<MedicineModel>>(
-              stream: _dbService.getMedicines(user.uid),
+              stream: _dbService.getMedicines(userModel.uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
                 final medicines = snapshot.data ?? [];
@@ -150,9 +152,9 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
               title: "LỊCH TÁI KHÁM",
               onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateCheckupPage())),
             ),
-
+            
             StreamBuilder<List<CheckupModel>>(
-              stream: _dbService.getCheckups(user.uid),
+              stream: _dbService.getCheckups(userModel.uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
                 final checkups = snapshot.data ?? [];
@@ -190,15 +192,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             ],
           ),
           const Spacer(),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'settings') Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage()));
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings, color: Colors.black54), SizedBox(width: 8), Text("Cài đặt")]))
-            ],
-            child: _smallAvatar(avatarBase64),
-          ),
+          _smallAvatar(avatarBase64),
         ],
       ),
     );
@@ -210,6 +204,17 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
       backgroundColor: const Color(0xFFFFC1A8),
       backgroundImage: (avatarBase64 != null && avatarBase64.isNotEmpty) ? MemoryImage(base64Decode(avatarBase64)) : null,
       child: (avatarBase64 == null || avatarBase64.isEmpty) ? const Icon(Icons.person, size: 14, color: Colors.white) : null,
+    );
+  }
+
+  Widget _warningCard() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: const Color(0xFFFFE6A7), borderRadius: BorderRadius.circular(16)),
+        child: const Row(children: [Icon(Icons.error, color: Colors.red), SizedBox(width: 8), Expanded(child: Text("Cảnh báo! Cha mẹ chưa xác nhận lịch uống thuốc Huyết áp sáng.", style: TextStyle(fontSize: 14)))]),
+      ),
     );
   }
 

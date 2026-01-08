@@ -11,6 +11,7 @@ class UserModel {
   final DateTime? birthDate; 
   final String? parentId;
   final List<String>? childrenIds;
+  final List<Map<String, dynamic>>? following; // Thêm trường danh sách người đang theo dõi
   final double? latitude;
   final double? longitude;
 
@@ -25,6 +26,7 @@ class UserModel {
     this.birthDate,
     this.parentId,
     this.childrenIds,
+    this.following,
     this.latitude,
     this.longitude,
   });
@@ -41,6 +43,7 @@ class UserModel {
       birthDate: data['birthDate'] != null ? (data['birthDate'] as Timestamp).toDate() : null,
       parentId: data['parentId'],
       childrenIds: (data['childrenIds'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
+      following: (data['following'] as List<dynamic>?)?.map((e) => e as Map<String, dynamic>).toList(),
       latitude: (data['latitude'] as num?)?.toDouble(),
       longitude: (data['longitude'] as num?)?.toDouble(),
     );
@@ -57,13 +60,13 @@ class UserModel {
       'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
       'parentId': parentId,
       'childrenIds': childrenIds,
+      'following': following,
       'latitude': latitude,
       'longitude': longitude,
-      'age': age, // Vẫn lưu tuổi vào DB bằng cách gọi hàm get age bên dưới
+      'age': age, 
     };
   }
 
-  // Hàm tính tuổi tự động dựa trên birthDate
   int get age {
     if (birthDate == null) return 0;
     final now = DateTime.now();

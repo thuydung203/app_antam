@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:antam_app/providers/auth_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class PairingExpiredPage extends StatefulWidget {
@@ -19,7 +22,7 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
   @override
   void initState() {
     super.initState();
-    _generateNewCode();
+    _generateAndSaveCode();
     _startTimer();
   }
 
@@ -29,12 +32,29 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
     super.dispose();
   }
 
-  void _generateNewCode() {
+  // Tạo và lưu mã vào Firestore
+  Future<void> _generateAndSaveCode() async {
     final random = Random();
-    setState(() {
-      _pairingCode = (random.nextInt(9000000) + 1000000).toString();
-      _secondsRemaining = 1800;
-    });
+    final newCode = (random.nextInt(9000000) + 1000000).toString();
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.userModel;
+
+    if (user != null) {
+      setState(() {
+        _pairingCode = newCode;
+        _secondsRemaining = 1800;
+      });
+
+      // Lưu mã vào Firestore để cha mẹ có thể tìm thấy
+      await FirebaseFirestore.instance.collection('pairing_codes').doc(_pairingCode).set({
+        'childId': user.uid,
+        'childName': user.name,
+        'childAvatar': user.avatar,
+        'createdAt': FieldValue.serverTimestamp(),
+        'expiresAt': DateTime.now().add(const Duration(minutes: 30)),
+      });
+    }
   }
 
   void _startTimer() {
@@ -45,7 +65,7 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
           _secondsRemaining--;
         });
       } else {
-        _generateNewCode();
+        _generateAndSaveCode(); 
       }
     });
   }
@@ -64,10 +84,7 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
         automaticallyImplyLeading: false, 
-        title: const Text(
-          "Gia đình", 
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
-        ),
+        title: const Text("Gửi mã kết nối", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -89,48 +106,31 @@ class _PairingExpiredPageState extends State<PairingExpiredPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05), 
-            blurRadius: 10, 
-            offset: const Offset(0, 4)
-          )
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
-          const Text("Gửi mã ghép", style: TextStyle(fontSize: 16)),
+          const Text("Mã kết nối của bạn", style: TextStyle(fontSize: 16)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                _pairingCode, 
-                style: const TextStyle(
-                  fontSize: 32, 
-                  fontWeight: FontWeight.bold, 
-                  color: Color(0xFFFFB300)
-                )
-              ),
+              Text(_pairingCode, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFFFFB300))),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.copy, color: Colors.grey),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: _pairingCode));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Đã sao chép mã!"))
-                  );
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã sao chép mã!")));
                 },
               ),
             ],
           ),
-          Text(
-            "Mã hết hạn sau: ${_formatTime(_secondsRemaining)}", 
-            style: const TextStyle(color: Colors.red, fontSize: 13)
-          ),
+          Text("Mã hết hạn sau: ${_formatTime(_secondsRemaining)}", style: const TextStyle(color: Colors.red, fontSize: 13)),
           const SizedBox(height: 20),
           QrImageView(data: _pairingCode, size: 160, version: QrVersions.auto),
           const SizedBox(height: 20),
+          const Text("Đưa mã này cho Cha/Mẹ để kết nối", textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
         ],
       ),
     );
