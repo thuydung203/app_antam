@@ -117,7 +117,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               alignment: Alignment.center,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: const Text(
-                                "Sign in",
+                                "Đăng nhập",
                                 style: TextStyle(
                                   color: Colors.black54,
                                 ),
@@ -136,7 +136,7 @@ class _SignUpPageState extends State<SignUpPage> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
-                              "Sign up",
+                              "Đăng ký",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,
@@ -153,7 +153,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   // FORM INPUTS
                   _inputField(
                     controller: _nameCtrl,
-                    hint: "Full Name", 
+                    hint: "Họ và tên",
                     icon: Icons.person_outline,
                     validator: (v) => v!.trim().isEmpty ? "Cần nhập tên" : null,
                   ),
@@ -173,7 +173,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
                   _inputField(
                     controller: _passCtrl,
-                    hint: "Password", 
+                    hint: "Mật khẩu",
                     icon: Icons.lock_outline, 
                     isPassword: true,
                     showPass: _obscurePass,
@@ -184,7 +184,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
                   _inputField(
                     controller: _confirmPassCtrl,
-                    hint: "Confirm Password", 
+                    hint: "Nhập lại mật khẩu",
                     icon: Icons.lock_outline, 
                     isPassword: true,
                     showPass: _obscureConfirm,
@@ -211,7 +211,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       child: _isLoading 
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : const Text(
-                        "SIGN UP",
+                        "ĐĂNG KÝ",
                         style: TextStyle(
                             fontSize: 16,
                             color: Colors.white,
@@ -226,14 +226,14 @@ class _SignUpPageState extends State<SignUpPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Already have an account? ",
+                      const Text("Bạn đã có tài khoản chưa? ",
                           style: TextStyle(color: Colors.black54)),
                       GestureDetector(
                         onTap: () {
                           Navigator.pop(context);  // QUAY VỀ SIGN IN
                         },
                         child: const Text(
-                          "Sign in",
+                          "Đăng nhập",
                           style: TextStyle(
                             color: Colors.redAccent,
                             fontWeight: FontWeight.w500,
@@ -251,7 +251,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     children: [
                       Container(width: 80, height: 1, color: Colors.grey),
                       const SizedBox(width: 8),
-                      const Text("Or"),
+                      const Text("Hoặc"),
                       const SizedBox(width: 8),
                       Container(width: 80, height: 1, color: Colors.grey),
                     ],

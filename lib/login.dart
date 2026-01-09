@@ -1,3 +1,4 @@
+import 'package:antam_app/forgot_password.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
@@ -19,11 +20,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   bool isSignIn = true;
 
-  // controllers để lấy text từ ô nhập
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl = TextEditingController();
-
-  // form key để validate
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   bool _isLoading = false;
@@ -39,44 +37,27 @@ class _LoginPageState extends State<LoginPage> {
   String _friendlyAuthError(Object e) {
     if (e is FirebaseAuthException) {
       switch (e.code) {
-        case 'invalid-email':
-          return 'Email không hợp lệ.';
-        case 'user-disabled':
-          return 'Tài khoản đã bị vô hiệu hóa.';
-        case 'user-not-found':
-          return 'Không tìm thấy tài khoản với email này.';
-        case 'wrong-password':
-          return 'Sai mật khẩu.';
-        case 'invalid-credential':
-          return 'Thông tin đăng nhập không đúng.';
-        case 'too-many-requests':
-          return 'Thử lại sau (quá nhiều lần).';
-        case 'network-request-failed':
-          return 'Lỗi mạng. Kiểm tra internet.';
-        default:
-          return e.message ?? 'Đăng nhập thất bại.';
+        case 'invalid-email': return 'Email không hợp lệ.';
+        case 'user-disabled': return 'Tài khoản đã bị vô hiệu hóa.';
+        case 'user-not-found': return 'Không tìm thấy tài khoản.';
+        case 'wrong-password': return 'Sai mật khẩu.';
+        default: return e.message ?? 'Đăng nhập thất bại.';
       }
     }
     return 'Đăng nhập thất bại.';
   }
 
   Future<void> _handleSignIn() async {
-    // validate form trước
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    final email = _emailCtrl.text.trim();
-    final password = _passCtrl.text;
 
     setState(() => _isLoading = true);
 
     try {
-      // Sử dụng AuthProvider để đăng nhập
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.signIn(email, password);
+      await authProvider.signIn(_emailCtrl.text.trim(), _passCtrl.text);
 
       if (!mounted) return;
 
-      // Đợi một chút để AuthProvider load userModel
       int retry = 0;
       while (authProvider.userModel == null && retry < 10) {
         await Future.delayed(const Duration(milliseconds: 300));
@@ -85,39 +66,16 @@ class _LoginPageState extends State<LoginPage> {
 
       final userModel = authProvider.userModel;
 
-      // Kiểm tra role và chuyển đến trang tương ứng
       if (userModel == null || userModel.role == 'none' || userModel.role == '') {
-        // Chưa có role -> Chọn vai trò
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const RoleSelectionPage()));
       } else if (userModel.role == 'child') {
-        // Vai trò CON -> Vào app con
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainNavigation()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigation()));
       } else if (userModel.role == 'parent') {
-        // Vai trò CHA MẸ -> Vào app cha mẹ
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ParentNavigation()),
-        );
-      } else {
-        // Trường hợp không xác định -> Chọn lại vai trò
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ParentNavigation()));
       }
     } catch (e) {
       if (!mounted) return;
-      final msg = _friendlyAuthError(e);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_friendlyAuthError(e))));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -146,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                   Image.asset("assets/images/logo_removeBG.png", width: 500),
                   const SizedBox(height: 30),
 
-                  // TAB SIGN IN / SIGN UP
+                  // TAB ĐĂNG NHẬP / ĐĂNG KÝ
                   Container(
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFE2DE),
@@ -164,13 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               alignment: Alignment.center,
-                              child: Text(
-                                "Sign in",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: isSignIn ? Colors.black : Colors.black54,
-                                ),
-                              ),
+                              child: Text("Đăng nhập", style: TextStyle(fontWeight: FontWeight.bold, color: isSignIn ? Colors.black : Colors.black54)),
                             ),
                           ),
                         ),
@@ -178,10 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                           child: GestureDetector(
                             onTap: () {
                               setState(() => isSignIn = false);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const SignUpPage()),
-                              );
+                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpPage()));
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -190,13 +139,7 @@ class _LoginPageState extends State<LoginPage> {
                                 color: !isSignIn ? Colors.white : Colors.transparent,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Text(
-                                "Sign up",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: !isSignIn ? Colors.black : Colors.black54,
-                                ),
-                              ),
+                              child: Text("Đăng ký", style: TextStyle(fontWeight: FontWeight.bold, color: !isSignIn ? Colors.black : Colors.black54)),
                             ),
                           ),
                         ),
@@ -207,115 +150,59 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 25),
 
                   // EMAIL
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
-                    ),
-                    child: TextFormField(
-                      controller: _emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        icon: Icon(Icons.email_outlined),
-                        hintText: "Email / Phone number",
-                        border: InputBorder.none,
-                      ),
-                      validator: (value) {
-                        final v = (value ?? "").trim();
-                        if (v.isEmpty) return "Email không được để trống";
-                        if (!v.contains("@")) return "Email không hợp lệ";
-                        return null;
-                      },
-                    ),
-                  ),
-
+                  _inputField(controller: _emailCtrl, hint: "Email", icon: Icons.email_outlined),
                   const SizedBox(height: 15),
 
-                  // PASSWORD
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
-                    ),
-                    child: TextFormField(
-                      controller: _passCtrl,
-                      obscureText: _obscure,
-                      decoration: InputDecoration(
-                        icon: const Icon(Icons.lock_outline),
-                        hintText: "Password",
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                          onPressed: () => setState(() => _obscure = !_obscure),
-                        ),
-                        border: InputBorder.none,
-                      ),
-                      validator: (value) {
-                        final v = value ?? "";
-                        if (v.length < 6) return "Mật khẩu phải >= 6 ký tự";
-                        return null;
+                  // MẬT KHẨU
+                  _inputField(
+                    controller: _passCtrl, 
+                    hint: "Mật khẩu", 
+                    icon: Icons.lock_outline, 
+                    isPass: true, 
+                    obscure: _obscure,
+                    onToggle: () => setState(() => _obscure = !_obscure)
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // QUÊN MẬT KHẨU
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const ForgotPasswordPage()));
                       },
+                      child: const Text(
+                        "Quên mật khẩu?",
+                        style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w500, decoration: TextDecoration.underline),
+                      ),
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // SIGN IN BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6B4A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed: _isLoading ? null : _handleSignIn,
-                      child: _isLoading
-                          ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                          : const Text(
-                        "SIGN IN",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  // NÚT ĐĂNG NHẬP (Đã thu ngắn lại và không bo góc)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B4A),
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Không bo góc
                     ),
+                    onPressed: _isLoading ? null : _handleSignIn,
+                    child: _isLoading
+                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text("ĐĂNG NHẬP", style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
 
-                  const SizedBox(height: 15),
-
-                  const Text("Forgot Password?", style: TextStyle(color: Colors.black54)),
                   const SizedBox(height: 20),
 
-                  // OR LINE
+                  // DÒNG HOẶC
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(width: 80, height: 1, color: Colors.grey),
                       const SizedBox(width: 8),
-                      const Text("Or"),
+                      const Text("Hoặc"),
                       const SizedBox(width: 8),
                       Container(width: 80, height: 1, color: Colors.grey),
                     ],
@@ -323,28 +210,50 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 25),
 
-                  // SOCIAL LOGIN
+                  // MẠNG XÃ HỘI
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      GestureDetector(
-                        onTap: () => _openUrl("https://facebook.com"),
-                        child: Image.asset("assets/images/fb.png", width: 40),
-                      ),
+                      GestureDetector(onTap: () => _openUrl("https://facebook.com"), child: Image.asset("assets/images/fb.png", width: 40)),
                       const SizedBox(width: 80),
-                      GestureDetector(
-                        onTap: () => _openUrl("https://google.com"),
-                        child: Image.asset("assets/images/gg.png", width: 40),
-                      ),
+                      GestureDetector(onTap: () => _openUrl("https://google.com"), child: Image.asset("assets/images/gg.png", width: 40)),
                     ],
                   ),
-
                   const SizedBox(height: 30),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _inputField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool isPass = false,
+    bool obscure = false,
+    VoidCallback? onToggle,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: const Offset(0, 2))],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPass && obscure,
+        decoration: InputDecoration(
+          icon: Icon(icon),
+          hintText: hint,
+          suffixIcon: isPass ? IconButton(icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined), onPressed: onToggle) : null,
+          border: InputBorder.none,
+        ),
+        validator: (v) => (v ?? "").isEmpty ? "Trường này không được để trống" : null,
       ),
     );
   }
