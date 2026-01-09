@@ -1,4 +1,4 @@
-import 'package:antam_app/gps.dart';
+import 'package:antam_app/map_screen.dart';
 import 'package:antam_app/parent_home.dart';
 import 'package:antam_app/parent_pairing.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +17,7 @@ class _ParentNavigationState extends State<ParentNavigation> {
   final List<Widget> _pages = [
     const ParentHomePage(),    // Index 0: Trang chủ
     const ParentPairingPage(), // Index 1: Kết nối
-    const GPSScreen(),         // Index 2: Định vị (GPS)
+    const MapScreen(),         // Index 2: Định vị (MapScreen sẽ tự hiển thị Toggle cho cha mẹ)
   ];
 
   @override
