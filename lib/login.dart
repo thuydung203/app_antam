@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
+import 'services/reminder_sync_service.dart';
 
 import 'signup.dart';
 import 'roleselection.dart';
@@ -71,6 +72,8 @@ class _LoginPageState extends State<LoginPage> {
       } else if (userModel.role == 'child') {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigation()));
       } else if (userModel.role == 'parent') {
+        // Khởi chạy đồng bộ nhắc nhở
+        ReminderSyncService().startSync(userModel.uid);
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ParentNavigation()));
       }
     } catch (e) {
