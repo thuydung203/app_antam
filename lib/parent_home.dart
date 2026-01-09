@@ -28,14 +28,13 @@ class _ParentHomePageState extends State<ParentHomePage> {
     super.dispose();
   }
 
-  // FR2.2 & FR3.3: Xử lý cuộc gọi SOS GSM
+  // SOS GSM
   Future<void> _handleSOS(BuildContext context) async {
-    const String childPhoneNumber = "0123456789"; // Số điện thoại người con
+    const String childPhoneNumber = "0123456789"; 
     final Uri launchUri = Uri(scheme: 'tel', path: childPhoneNumber);
     
     if (await canLaunchUrl(launchUri)) {
       await launchUrl(launchUri);
-      // Gửi tín hiệu lên Firebase để app Con hiện cảnh báo
       final user = Provider.of<AuthProvider>(context, listen: false).userModel;
       await FirebaseFirestore.instance.collection('sos_alerts').add({
         'from': user?.name ?? "Cha/Mẹ",
@@ -45,17 +44,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
     }
   }
 
-  // FR2.3: Xử lý xác nhận uống thuốc
+  // Check-in uống thuốc
   Future<void> _handleCheckIn(String medicineId) async {
     await FirebaseFirestore.instance.collection('medicines').doc(medicineId).update({
       'isConfirmed': true,
       'confirmedAt': FieldValue.serverTimestamp(),
     });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã báo cho con: Bố/Mẹ đã uống thuốc!")),
-      );
-    }
   }
 
   @override
@@ -80,49 +74,15 @@ class _ParentHomePageState extends State<ParentHomePage> {
           padding: const EdgeInsets.symmetric(horizontal: 22.0),
           child: Column(
             children: [
-              // FR4.1: SLIDESHOW ẢNH (Giúp giảm cô đơn)
-              _buildSlideshow(),
+              // TRUYỀN CHILD ID VÀO SLIDESHOW
+              _buildSlideshow(user?.childId),
 
               const SizedBox(height: 30),
 
-              // FR2.3: NÚT CHECK-IN THÔNG MINH (Chỉ hiện khi có thuốc chưa uống)
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('medicines')
-                    .where('userId', isEqualTo: user?.uid)
-                    .where('isConfirmed', isEqualTo: false)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                    final medDoc = snapshot.data!.docs.first;
-                    final medName = medDoc['name'];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 120,
-                        child: ElevatedButton(
-                          onPressed: () => _handleCheckIn(medDoc.id),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFA387), // Màu cam thương hiệu
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text("BẤM VÀO ĐÂY ĐỂ BÁO", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                              Text("ĐÃ UỐNG $medName", style: const TextStyle(color: Colors.white, fontSize: 18)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
+              // Nút Check-in thông minh
+              _buildCheckInButton(user?.uid),
 
-              // FR2.2: NÚT SOS KHẨN CẤP
+              const SizedBox(height: 10),
               _buildLargeButton(
                 title: 'SOS KHẨN CẤP',
                 color: const Color(0xFFF94133),
@@ -131,12 +91,11 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
               const SizedBox(height: 15),
               
-              // FR2.4: NÚT GỌI CON
               _buildLargeButton(
                 title: 'GỌI CON',
                 color: const Color(0xFF78EC46),
                 icon: Icons.call,
-                onPressed: () => _handleSOS(context), // Có thể đổi sang số gọi bình thường
+                onPressed: () => _handleSOS(context), 
               ),
 
               const SizedBox(height: 50),
@@ -147,9 +106,66 @@ class _ParentHomePageState extends State<ParentHomePage> {
     );
   }
 
-  Widget _buildSlideshow() {
+  Widget _buildCheckInButton(String? parentId) {
+    if (parentId == null) return const SizedBox.shrink();
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('images').orderBy('createdAt', descending: true).snapshots(),
+      stream: FirebaseFirestore.instance
+          .collection('medicines')
+          .where('userId', isEqualTo: parentId)
+          .where('isConfirmed', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final medDoc = snapshot.data!.docs.first;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: SizedBox(
+              width: double.infinity,
+              height: 120,
+              child: ElevatedButton(
+                onPressed: () => _handleCheckIn(medDoc.id),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFA387),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("BẤM VÀO ĐÂY ĐỂ BÁO", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text("ĐÃ UỐNG ${medDoc['name']}", style: const TextStyle(color: Colors.white, fontSize: 18)),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildSlideshow(String? childId) {
+    // Nếu chưa kết nối với con, không hiển thị ảnh của người khác
+    if (childId == null || childId.isEmpty) {
+      return Container(
+        height: 350,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Center(
+          child: Text("Kết nối với con để xem ảnh gia đình", style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('images')
+          .where('userId', isEqualTo: childId) // CHỈ LẤY ẢNH CỦA CON MÌNH
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
         final docs = snapshot.data?.docs ?? [];
         if (docs.isEmpty) return const SizedBox(height: 200, child: Center(child: Text("Đang chờ ảnh từ con...")));
