@@ -96,7 +96,6 @@ class _ParentHomePageState extends State<ParentHomePage> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    // Lấy tất cả thuốc của user trong ngày hôm nay
     final allMedicinesSnapshot = await FirebaseFirestore.instance
         .collection('medicines')
         .where('userId', isEqualTo: user.uid)
@@ -105,17 +104,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
     final todayMedicines = allMedicinesSnapshot.docs.where((doc) {
       final data = doc.data();
       final repeatDays = List<String>.from(data['repeatDays'] ?? []);
-
-      // Kiểm tra xem thuốc này có lịch uống hôm nay không
-      if (repeatDays.isEmpty) return true; // Nếu không có lịch lặp, coi như mỗi ngày
-
+      if (repeatDays.isEmpty) return true;
       final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       final todayName = weekdayNames[now.weekday - 1];
-
       return repeatDays.contains(todayName);
     }).toList();
 
-    // Đếm số thuốc đã xác nhận
     final confirmedCount = todayMedicines.where((doc) {
       final data = doc.data();
       return data['isConfirmed'] == true;
@@ -123,7 +117,6 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
     // 3. Nếu đã uống đủ tất cả thuốc → Tự động tạo check-in
     if (todayMedicines.isNotEmpty && confirmedCount == todayMedicines.length) {
-      // Tạo check-in cho hôm nay
       final checkInData = CheckInModel(
         id: '${user.uid}_${today.year}-${today.month}-${today.day}',
         userId: user.uid,
@@ -183,7 +176,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
 
               const SizedBox(height: 30),
 
-              // FR2.3: NÚT CHECK-IN THÔNG MINH (Chỉ hiện khi có thuốc chưa uống)
+              // FR2.3: NÚT CHECK-IN THÔNG MINH
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('medicines')
@@ -202,13 +195,13 @@ class _ParentHomePageState extends State<ParentHomePage> {
                         child: ElevatedButton(
                           onPressed: () => _handleCheckIn(medDoc.id),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFA387), // Màu cam thương hiệu
+                            backgroundColor: const Color(0xFFFFA387),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                           ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("BẤM VÀO ĐÂY ĐỂ BÁO", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                              const Text("BẤM VÀO ĐÂY ĐỂ BÁO", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                               Text("ĐÃ UỐNG $medName", style: const TextStyle(color: Colors.white, fontSize: 18)),
                             ],
                           ),
@@ -219,10 +212,35 @@ class _ParentHomePageState extends State<ParentHomePage> {
                   return const SizedBox.shrink();
                 },
               ),
-            }
+
+              const SizedBox(height: 10),
+
+              // NÚT SOS KHẨN CẤP
+              _buildLargeButton(
+                title: 'SOS KHẨN CẤP',
+                color: const Color(0xFFF94133),
+                onPressed: () => _handleSOS(context),
+              ),
+
+              const SizedBox(height: 15),
+              
+              // NÚT GỌI CON
+              _buildLargeButton(
+                title: 'GỌI CON',
+                color: const Color(0xFF78EC46),
+                icon: Icons.call,
+                onPressed: () => _handleSOS(context), 
+              ),
+
+              const SizedBox(height: 50),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildSlideshow(String? childId) {
-    // Nếu chưa kết nối với con, không hiển thị ảnh của người khác
     if (childId == null || childId.isEmpty) {
       return Container(
         height: 350,
@@ -240,12 +258,12 @@ class _ParentHomePageState extends State<ParentHomePage> {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('images')
-          .where('userId', isEqualTo: childId) // CHỈ LẤY ẢNH CỦA CON MÌNH
+          .where('userId', isEqualTo: childId)
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
         final docs = snapshot.data?.docs ?? [];
-        if (docs.isEmpty) return const SizedBox(height: 200, child: Center(child: Text("Đang chờ ảnh từ con...")));
+        if (docs.isEmpty) return Container(height: 350, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)), child: const Center(child: Text("Đang chờ ảnh từ con...")));
         
         _timer ??= Timer.periodic(const Duration(seconds: 5), (Timer timer) {
           if (_currentPage < docs.length - 1) _currentPage++; else _currentPage = 0;
