@@ -36,9 +36,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      // SỬA DÒNG NÀY ĐỂ TEST BẢN ĐỒ
       home: const LoadingPage(),
-      // Khi nào test xong thì sửa lại thành: const LoadingPage()
     );
   }
 }
