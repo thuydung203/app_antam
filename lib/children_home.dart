@@ -155,7 +155,8 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _warningCard(),
+            _buildCheckupWarning(targetUserId),
+            _buildDynamicWarning(targetUserId),
             _userInfo(displayName, avatarBase64, displayAge),
 
             _sectionHeader(
@@ -258,14 +259,106 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  Widget _warningCard() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: const Color(0xFFFFE6A7), borderRadius: BorderRadius.circular(16)),
-        child: const Row(children: [Icon(Icons.error, color: Colors.red), SizedBox(width: 8), Expanded(child: Text("Cảnh báo! Cha mẹ chưa xác nhận lịch uống thuốc Huyết áp sáng.", style: TextStyle(fontSize: 14)))]),
-      ),
+  Widget _buildCheckupWarning(String targetUserId) {
+    return StreamBuilder<List<CheckupModel>>(
+      stream: _dbService.getCheckups(targetUserId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final now = DateTime.now();
+        final tomorrow = now.add(const Duration(hours: 24));
+
+        // Tìm lịch khám trong 24h tới và chưa qua
+        final upcomingCheckups = snapshot.data!.where((c) {
+          return c.date.isAfter(now) && c.date.isBefore(tomorrow);
+        }).toList();
+
+        if (upcomingCheckups.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final checkup = upcomingCheckups.first;
+        final timeStr = DateFormat('HH:mm').format(checkup.date);
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F2FD), // Màu xanh nhạt cho lịch khám
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Nhắc nhở! Cha mẹ có lịch khám tại ${checkup.hospitalName} vào lúc $timeStr.",
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDynamicWarning(String targetUserId) {
+    return StreamBuilder<List<MedicineModel>>(
+      stream: _dbService.getMedicines(targetUserId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Lọc thuốc theo ngày trong tuần
+        final now = DateTime.now();
+        final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        final todayName = weekdayNames[now.weekday - 1];
+
+        final todayMeds = snapshot.data!.where((m) {
+          if (m.repeatDays.isEmpty) return true; // Hàng ngày
+          return m.repeatDays.contains(todayName);
+        }).toList();
+
+        final unconfirmedMeds = todayMeds.where((m) => !m.isConfirmed).toList();
+
+        if (unconfirmedMeds.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Ưu tiên hiển thị thuốc nào chưa uống
+        final med = unconfirmedMeds.first;
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE6A7),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.red),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Cảnh báo! Cha mẹ chưa xác nhận lịch uống thuốc ${med.name}.",
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
