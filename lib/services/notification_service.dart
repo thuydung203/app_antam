@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/medicine_model.dart';
+import '../models/checkup_model.dart';
 import '../main.dart';
 import '../alarm_clock.dart';
 
@@ -161,5 +162,63 @@ class NotificationService {
   Future<void> cancelAllReminders() async {
     await flutterLocalNotificationsPlugin.cancelAll();
     debugPrint("Cancelled all notifications");
+  }
+  Future<void> scheduleCheckupReminder(CheckupModel checkup) async {
+    // 1. Tạo ID thông báo dựa trên ID của checkup
+    final int id = checkup.id.hashCode;
+    
+    // 2. Tính thời gian thông báo: Trước 12 tiếng
+    // Checkup date là thời điểm khám, trừ đi 12h
+    final DateTime checkupTime = checkup.date;
+    DateTime scheduledTime = checkupTime.subtract(const Duration(hours: 12));
+
+    // 3. Kiểm tra thời gian
+    final now = DateTime.now();
+
+    // Nếu thời gian thông báo đã qua rồi (ví dụ tạo lịch khám gấp trong vòng 12h tới)
+    if (scheduledTime.isBefore(now)) {
+       // Thông báo ngay sau 5 giây (để nhắc nhở ngay lập tức)
+       scheduledTime = now.add(const Duration(seconds: 5));
+    }
+
+    // Chuyển sang TimeZone local
+    final scheduledTZDate = tz.TZDateTime.from(scheduledTime, tz.local);
+
+    final String payload = "checkup|${checkup.id}|${checkup.hospitalName}";
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'checkup_reminders',
+      'Nhắc tái khám',
+      channelDescription: 'Thông báo nhắc nhở lịch tái khám trước 12h',
+      importance: Importance.max,
+      priority: Priority.high,
+      category: AndroidNotificationCategory.event,
+    );
+
+    final NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      id,
+      'Sắp đến giờ tái khám!',
+      'Bạn có lịch khám tại ${checkup.hospitalName} vào lúc ${_formatTime(checkupTime)}',
+      scheduledTZDate,
+      platformChannelSpecifics,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
+
+    debugPrint("Scheduled checkup reminder for ${checkup.hospitalName} at ${scheduledTZDate.toString()}");
+  }
+
+  String _formatTime(DateTime date) {
+    return "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} ngày ${date.day}/${date.month}";
+  }
+  Future<void> cancelCheckupReminder(String checkupId) async {
+    await flutterLocalNotificationsPlugin.cancel(checkupId.hashCode);
+    debugPrint("Cancelled checkup reminder for ID: $checkupId");
   }
 }

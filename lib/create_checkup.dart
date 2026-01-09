@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'models/checkup_model.dart';
 import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
+import 'services/notification_service.dart';
 
 class CreateCheckupPage extends StatefulWidget {
   final String? targetUserId;
@@ -50,11 +51,25 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
       );
 
       try {
-        await DatabaseService().addCheckup(newCheckup);
+        // 1. Lưu vào Database và lấy ID
+        String docId = await DatabaseService().addCheckup(newCheckup);
+        
+        // 2. Cập nhật ID cho checkup model (để dùng làm ID notify)
+        CheckupModel checkupWithId = CheckupModel(
+           id: docId,
+           hospitalName: newCheckup.hospitalName,
+           date: newCheckup.date,
+           result: newCheckup.result,
+           userId: newCheckup.userId,
+        );
+
+        // 3. Lên lịch thông báo
+        await NotificationService().scheduleCheckupReminder(checkupWithId);
+
         if (!mounted) return;
         final messenger = ScaffoldMessenger.of(context);
         messenger.showSnackBar(
-          const SnackBar(content: Text('Đã thêm lịch tái khám')),
+          const SnackBar(content: Text('Đã thêm lịch tái khám và đặt nhắc nhở')),
         );
         Navigator.of(context).pop();
       } catch (e) {
@@ -131,7 +146,7 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'CREATE CHECKUP',
+                        'TẠO LỊCH KHÁM',
                         style: TextStyle(color: Colors.black, fontSize: 12),
                       ),
                       Icon(Icons.code, color: Colors.black),
