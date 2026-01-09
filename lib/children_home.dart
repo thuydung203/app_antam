@@ -216,7 +216,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             ),
 
             _sectionHeader(title: "LỊCH SỬ CHECK-IN"),
-            _checkinCard(),
+            _checkinCard(targetUserId),
             const SizedBox(height: 30),
           ],
         ),
@@ -415,31 +415,65 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  Widget _checkinCard() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-        child: Row(
-          children: [
-            const CircularProgressIndicator(value: 1, strokeWidth: 8, valueColor: AlwaysStoppedAnimation(Color(0xFFFFA387))),
-            const SizedBox(width: 20),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _checkinCard(String userId) {
+    return StreamBuilder<List<CheckInModel>>(
+      stream: _dbService.getCheckIns(userId, DateTime.now()),
+      builder: (context, snapshot) {
+        final checkins = snapshot.data ?? [];
+        int percentage = 0;
+        int daysPassed = DateTime.now().day;
+        if (daysPassed > 0) {
+          percentage = ((checkins.length / daysPassed) * 100).round();
+          if (percentage > 100) percentage = 100;
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+            child: Row(
               children: [
-                const Text("Tuân thủ tháng này", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CheckInHistoryPage())),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFA387), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-                  child: const Text("Xem chi tiết", style: TextStyle(color: Colors.black)),
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: percentage / 100,
+                        strokeWidth: 8,
+                        backgroundColor: const Color(0x33FFA387),
+                        valueColor: const AlwaysStoppedAnimation(Color(0xFFFFA387)),
+                      ),
+                      Text("$percentage%", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Tuân thủ tháng này", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () => Navigator.push(
+                        context, 
+                        MaterialPageRoute(builder: (context) => CheckInHistoryPage(targetUserId: userId))
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFA387), 
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+                      ),
+                      child: const Text("Xem chi tiết", style: TextStyle(color: Colors.black)),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
 
