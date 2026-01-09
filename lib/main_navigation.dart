@@ -1,6 +1,6 @@
 import 'package:antam_app/add_images.dart';
 import 'package:antam_app/children_home.dart';
-import 'package:antam_app/gps.dart';
+import 'package:antam_app/map_screen.dart';
 import 'package:antam_app/paring.dart';
 import 'package:antam_app/setting.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +23,7 @@ class _MainNavigationState extends State<MainNavigation> {
     final List<Widget> _pages = [
       ChildrenHomePage(selectedPerson: widget.selectedPerson),
       const AddImage(), 
-      const GPSScreen(),
+      const MapScreen(),
       const PairingExpiredPage(),
       const SettingPage(),
     ];

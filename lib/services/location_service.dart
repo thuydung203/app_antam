@@ -32,11 +32,12 @@ class LocationService {
   /// Update the user's current location in Firestore
   Future<void> updateUserLocation(String uid) async {
     try {
+      // --- PHẦN ĐÃ SỬA ---
+      // Dùng desiredAccuracy thay cho locationSettings để tương thích
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
+        desiredAccuracy: LocationAccuracy.high,
       );
+      // -------------------
 
       await _db.collection('users').doc(uid).update({
         'latitude': position.latitude,
@@ -44,7 +45,7 @@ class LocationService {
         'lastUpdateTime': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      // Handle error silently or use a logger
+      print("Lỗi lấy vị trí: $e"); // Nên in lỗi ra để dễ debug
     }
   }
 
