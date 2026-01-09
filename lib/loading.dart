@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
+import 'services/reminder_sync_service.dart';
 import 'login.dart';
 import 'roleselection.dart';
 
@@ -62,6 +63,8 @@ class _LoadingPageState extends State<LoadingPage> {
             MaterialPageRoute(builder: (_) => const MainNavigation()),
           );
         } else if (userModel.role == "parent") {
+          // Khởi chạy đồng bộ nhắc nhở
+          ReminderSyncService().startSync(userModel.uid);
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const ParentNavigation()),

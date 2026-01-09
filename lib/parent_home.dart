@@ -164,6 +164,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                     children: [
                       _buildSlideshow(idToTrack),
                       const SizedBox(height: 30),
+                      _buildCheckInButton(user?.uid),
                       const SizedBox(height: 10),
                       
                       // NÚT SOS: Gọi số điện thoại của con (Real-time)
