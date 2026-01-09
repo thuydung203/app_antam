@@ -109,8 +109,9 @@ class DatabaseService {
 
   // --- Checkup Operations ---
 
-  Future<void> addCheckup(CheckupModel checkup) async {
-    await _checkupsCollection.add(checkup.toMap());
+  Future<String> addCheckup(CheckupModel checkup) async {
+    DocumentReference docRef = await _checkupsCollection.add(checkup.toMap());
+    return docRef.id;
   }
 
   Future<void> deleteCheckup(String id) async {

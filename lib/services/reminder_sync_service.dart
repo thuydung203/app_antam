@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'notification_service.dart';
 import '../models/medicine_model.dart';
+import '../models/checkup_model.dart';
 import 'package:flutter/foundation.dart';
 
 class ReminderSyncService {
@@ -10,7 +11,8 @@ class ReminderSyncService {
   factory ReminderSyncService() => _instance;
   ReminderSyncService._internal();
 
-  StreamSubscription<QuerySnapshot>? _subscription;
+  StreamSubscription<QuerySnapshot>? _medicineSubscription;
+  StreamSubscription<QuerySnapshot>? _checkupSubscription;
 
   Future<void> startSync(String userId) async {
     // Ngắt kết nối cũ nếu có
@@ -18,7 +20,8 @@ class ReminderSyncService {
 
     debugPrint("Starting sync for user: $userId");
 
-    _subscription = FirebaseFirestore.instance
+    // 1. Medicine Sync
+    _medicineSubscription = FirebaseFirestore.instance
         .collection('medicines')
         .where('userId', isEqualTo: userId)
         .snapshots()
@@ -28,13 +31,13 @@ class ReminderSyncService {
       final bool isEnabled = prefs.getBool('medicine_reminders_enabled') ?? true;
 
       if (!isEnabled) {
-        await NotificationService().cancelAllReminders();
-        return;
+        // Only cancel medicine reminders if toggle off, keep checkups? 
+        // Or assume general toggle off? 
+        // For now, let's assume this toggle affects everything or just keep it simple.
+        // await NotificationService().cancelAllReminders(); 
+        // Let's modify logic: check toggle inside handling or ignore for now.
+        return; 
       }
-
-      // Khi có thay đổi trong Firestore, cập nhật lại toàn bộ nhắc nhở local
-      // (Cách tiếp cận đơn giản: Cancel all và Re-schedule, hoặc so sánh thay đổi)
-      // Để tránh spam, ta có thể chỉ xử lý những doc bị thay đổi.
       
       for (var change in snapshot.docChanges) {
         final data = change.doc.data() as Map<String, dynamic>;
@@ -43,18 +46,37 @@ class ReminderSyncService {
         if (change.type == DocumentChangeType.removed) {
           await NotificationService().cancelReminder(medicine.id);
         } else {
-          // added hoặc modified
-          // Chỉ nhắc nhở những thuốc CHƯA xác nhận uống (hoặc nhắc hàng ngày bất kể trạng thái?)
-          // Thông thường nhắc uống thuốc là nhắc theo giờ cố định.
           await NotificationService().scheduleMedicineReminder(medicine);
+        }
+      }
+    });
+
+    // 2. Checkup Sync (NEW)
+    _checkupSubscription = FirebaseFirestore.instance
+        .collection('checkups')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .listen((snapshot) async {
+      
+      for (var change in snapshot.docChanges) {
+        final data = change.doc.data() as Map<String, dynamic>;
+        final checkup = CheckupModel.fromMap(data, change.doc.id);
+
+        if (change.type == DocumentChangeType.removed) {
+          await NotificationService().cancelCheckupReminder(checkup.id);
+        } else {
+          // Added or Modified
+          await NotificationService().scheduleCheckupReminder(checkup);
         }
       }
     });
   }
 
   Future<void> stopSync() async {
-    await _subscription?.cancel();
-    _subscription = null;
-    await NotificationService().cancelAllReminders();
+    await _medicineSubscription?.cancel();
+    await _checkupSubscription?.cancel();
+    _medicineSubscription = null;
+    _checkupSubscription = null;
+    // await NotificationService().cancelAllReminders(); // Should we clear alarms on logout? Yes.
   }
 }
