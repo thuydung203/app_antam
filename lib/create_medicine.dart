@@ -5,7 +5,8 @@ import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
 
 class CreateMedicinePage extends StatefulWidget {
-  const CreateMedicinePage({super.key});
+  final String? targetUserId;
+  const CreateMedicinePage({super.key, this.targetUserId});
 
   @override
   State<CreateMedicinePage> createState() => _CreateMedicinePageState();
@@ -15,7 +16,6 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
   // 1. Dữ liệu trạng thái cần lưu
   final TextEditingController _medicineNameController = TextEditingController();
   TimeOfDay _selectedTime = TimeOfDay.now();
-  DateTime _selectedDate = DateTime.now();
   final List<String> _selectedDays = [
     'T2',
     'T3',
@@ -49,20 +49,6 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
     }
   }
 
-  // Hàm hiển thị Date Picker (Dùng cho Lịch)
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
 
   // Hàm hiển thị Dialog chọn ngày lặp lại (Thứ 2 - Chủ nhật)
   void _showRepeatDayPicker() {
@@ -156,10 +142,6 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
     return _selectedDays.join(', ');
   }
 
-  // Định dạng ngày hiển thị (DD/MM/YYYY)
-  String get _formattedDate {
-    return '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +255,7 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                                 name: name,
                                 dosage: '1 viên', 
                                 time: TimeOfDayModel(hour: _selectedTime.hour, minute: _selectedTime.minute),
-                                userId: user.uid,
+                                userId: widget.targetUserId ?? user.uid,
                                 repeatDays: _selectedDays,
                                 sound: _selectedSound
                             );
@@ -351,45 +333,8 @@ class _CreateMedicinePageState extends State<CreateMedicinePage> {
                     ),
                     const SizedBox(height: 30),
 
-                    // --- CHỌN LỊCH (Ngày & Giờ) ---
+                    // --- CHỌN THỜI GIAN ---
 
-                    // Chọn Ngày
-                    InkWell(
-                      onTap: () => _selectDate(context),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Ngày',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                Text(
-                                  _formattedDate,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.black.withValues(alpha: 0.4),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 18,
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Divider(color: Colors.black.withValues(alpha: 0.2)),
 
                     // Chọn Giờ
                     InkWell(

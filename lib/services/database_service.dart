@@ -66,6 +66,47 @@ class DatabaseService {
     await _medicinesCollection.doc(id).delete();
   }
 
+  Future<void> confirmMedicineIntake(String medicineId, String userId) async {
+    await _medicinesCollection.doc(medicineId).update({
+      'isConfirmed': true,
+      'confirmedAt': FieldValue.serverTimestamp(),
+    });
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final allMedicinesSnapshot = await _medicinesCollection
+        .where('userId', isEqualTo: userId)
+        .get();
+
+    final todayMedicines = allMedicinesSnapshot.docs.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      final repeatDays = List<String>.from(data['repeatDays'] ?? []);
+      if (repeatDays.isEmpty) return true;
+      final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      final todayName = weekdayNames[now.weekday - 1];
+      return repeatDays.contains(todayName);
+    }).toList();
+
+    final confirmedCount = todayMedicines.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return data['isConfirmed'] == true;
+    }).length;
+
+    if (todayMedicines.isNotEmpty && confirmedCount == todayMedicines.length) {
+      final checkInData = CheckInModel(
+        id: '${userId}_${today.year}-${today.month}-${today.day}',
+        userId: userId,
+        date: today,
+        status: true,
+      );
+
+      await _checkinsCollection
+          .doc(checkInData.id)
+          .set(checkInData.toMap());
+    }
+  }
+
   // --- Checkup Operations ---
 
   Future<void> addCheckup(CheckupModel checkup) async {

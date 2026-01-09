@@ -1,4 +1,4 @@
-// import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MedicineModel {
   final String id;
@@ -9,6 +9,7 @@ class MedicineModel {
   final List<String> repeatDays;
   final String sound;
   final bool isConfirmed; // Trạng thái xác nhận của cha mẹ (True: Đã uống, False: Chưa/Không)
+  final DateTime? confirmedAt; // Thời gian xác nhận gần nhất
 
   MedicineModel({
     required this.id,
@@ -19,9 +20,26 @@ class MedicineModel {
     this.repeatDays = const [],
     this.sound = 'Mặc định',
     this.isConfirmed = false,
+    this.confirmedAt,
   });
 
   factory MedicineModel.fromMap(Map<String, dynamic> data, String id) {
+    DateTime? confirmedAt = data['confirmedAt'] is Timestamp 
+        ? (data['confirmedAt'] as Timestamp).toDate() 
+        : null;
+
+    bool isConfirmed = data['isConfirmed'] ?? false;
+    
+    // Logic reset daily: Nếu đã uống nhưng ngày xác nhận không phải hôm nay -> Reset hiển thị là chưa uống
+    if (isConfirmed && confirmedAt != null) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final confirmedDate = DateTime(confirmedAt.year, confirmedAt.month, confirmedAt.day);
+      if (confirmedDate.isBefore(today)) {
+        isConfirmed = false;
+      }
+    }
+
     return MedicineModel(
       id: id,
       name: data['name'] ?? '',
@@ -30,7 +48,8 @@ class MedicineModel {
       userId: data['userId'] ?? '',
       repeatDays: List<String>.from(data['repeatDays'] ?? []),
       sound: data['sound'] ?? 'Mặc định',
-      isConfirmed: data['isConfirmed'] ?? false,
+      isConfirmed: isConfirmed,
+      confirmedAt: confirmedAt,
     );
   }
 
@@ -43,6 +62,7 @@ class MedicineModel {
       'repeatDays': repeatDays,
       'sound': sound,
       'isConfirmed': isConfirmed,
+      'confirmedAt': confirmedAt != null ? Timestamp.fromDate(confirmedAt!) : null,
     };
   }
 }

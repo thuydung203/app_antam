@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/reminder_sync_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -40,10 +41,16 @@ class AuthProvider with ChangeNotifier {
             .listen((snapshot) {
           if (snapshot.exists) {
             _userModel = UserModel.fromMap(snapshot.data() as Map<String, dynamic>, user.uid);
+            
+            // Bắt đầu sync nhắc nhở nếu là cha mẹ (hoặc có lịch uống thuốc)
+            ReminderSyncService().startSync(user.uid);
+            
             notifyListeners();
           }
         });
       } else {
+        // Ngừng sync khi logout
+        ReminderSyncService().stopSync();
         _userModel = null;
       }
       _isLoading = false;

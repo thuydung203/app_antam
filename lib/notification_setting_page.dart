@@ -1,4 +1,7 @@
+import 'package:antam_app/services/reminder_sync_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -8,10 +11,58 @@ class NotificationPage extends StatefulWidget {
 }
 
 class _NotificationSettingPageState extends State<NotificationPage> {
-  // Trạng thái (state) của các nút bật/tắt
+  bool _isMedicationReminderEnabled = true;
   bool _isNotificationEnabled = true;
   bool _isNotificationAndVibrationEnabled = true;
-  bool _isMedicationReminderEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isMedicationReminderEnabled = prefs.getBool('medicine_reminders_enabled') ?? true;
+      _isNotificationEnabled = prefs.getBool('is_notification_enabled') ?? true;
+      _isNotificationAndVibrationEnabled = prefs.getBool('is_notification_vibration_enabled') ?? true;
+    });
+  }
+
+  Future<void> _toggleNotification(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_notification_enabled', value);
+    setState(() {
+      _isNotificationEnabled = value;
+    });
+  }
+
+  Future<void> _toggleNotificationAndVibration(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_notification_vibration_enabled', value);
+    setState(() {
+      _isNotificationAndVibrationEnabled = value;
+    });
+  }
+
+  Future<void> _toggleMedicationReminder(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('medicine_reminders_enabled', value);
+    setState(() {
+      _isMedicationReminderEnabled = value;
+    });
+    
+    // Re-trigger sync based on current user
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      if (value) {
+        ReminderSyncService().startSync(user.uid);
+      } else {
+        ReminderSyncService().stopSync();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,22 +118,14 @@ class _NotificationSettingPageState extends State<NotificationPage> {
                   _buildSwitchTile(
                     title: 'Bật thông báo',
                     value: _isNotificationEnabled,
-                    onChanged: (bool newValue) {
-                      setState(() {
-                        _isNotificationEnabled = newValue;
-                      });
-                    },
+                    onChanged: _toggleNotification,
                   ),
                   const Divider(height: 1, indent: 16, endIndent: 16),
                   // 2. Bật thông báo & Rung
                   _buildSwitchTile(
                     title: 'Bật thông báo & Rung',
                     value: _isNotificationAndVibrationEnabled,
-                    onChanged: (bool newValue) {
-                      setState(() {
-                        _isNotificationAndVibrationEnabled = newValue;
-                      });
-                    },
+                    onChanged: _toggleNotificationAndVibration,
                   ),
                 ],
               ),
@@ -117,11 +160,7 @@ class _NotificationSettingPageState extends State<NotificationPage> {
               child: _buildSwitchTile(
                 title: 'Lời nhắc uống thuốc',
                 value: _isMedicationReminderEnabled,
-                onChanged: (bool newValue) {
-                  setState(() {
-                    _isMedicationReminderEnabled = newValue;
-                  });
-                },
+                onChanged: _toggleMedicationReminder,
               ),
             ),
             const SizedBox(height: 24),

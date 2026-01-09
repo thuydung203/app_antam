@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'package:provider/provider.dart';
+import 'services/database_service.dart';
+import 'providers/auth_provider.dart';
+import 'confirmation.dart';
 
 class AlarmClockPage extends StatelessWidget {
 
   final String alarmTime;
   final String reminderText;
+  final String? medicineId;
 
   const AlarmClockPage
   ({
     super.key,
     this.alarmTime = '08:00', // Giờ báo thức mặc định
     this.reminderText = 'Đến giờ uống thuốc', // Thông báo mặc định
+    this.medicineId,
   });
 
   @override
@@ -84,12 +90,23 @@ class AlarmClockPage extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Xử lý khi xác nhận đã uống thuốc
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Xác nhận đã uống thuốc!')),
-                    );
-                    // Có thể điều hướng đến ConfirmationPage sau đó
+                  onPressed: () async {
+                    if (medicineId != null) {
+                      final userId = Provider.of<AuthProvider>(context, listen: false).userModel?.uid;
+                      if (userId != null) {
+                        await DatabaseService().confirmMedicineIntake(medicineId!, userId);
+                        if (context.mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ConfirmationPage()),
+                          );
+                        }
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Xác nhận đã uống thuốc!')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber.shade700, // Màu vàng đậm
