@@ -44,7 +44,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
     super.dispose();
   }
 
-  // LOGIC KẾT NỐI: 1 CHA MẸ CHỈ CÓ 1 CON THEO DÕI
+  // LOGIC KẾT NỐI
   Future<void> _handleConnect() async {
     final String code = _inputController.text.trim();
     if (code.isEmpty) return;
@@ -57,12 +57,10 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
 
       if (parent == null) throw "Vui lòng đăng nhập lại.";
 
-      // KIỂM TRA: Nếu Cha Mẹ đã có con theo dõi rồi thì báo lỗi ngay
       if (parent.childId != null && parent.childId!.isNotEmpty) {
         throw "Tài khoản này đã kết nối với một người con khác.";
       }
 
-      // 1. Tìm mã của Con trong collection pairing_codes
       final doc = await FirebaseFirestore.instance.collection('pairing_codes').doc(code).get();
       if (!doc.exists) throw "Mã kết nối không hợp lệ hoặc đã hết hạn.";
 
@@ -74,9 +72,6 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
 
       if (DateTime.now().isAfter(expiresAt)) throw "Mã đã hết hạn.";
 
-      // --- THỰC HIỆN KẾT NỐI ---
-
-      // A. Cập nhật cho CON (Người theo dõi): Thêm thông tin CHA MẸ vào danh sách 'following'
       final Map<String, dynamic> parentInfo = {
         'uid': parent.uid,
         'name': parent.name,
@@ -87,19 +82,16 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
         'connectedAt': Timestamp.now(),
       };
 
-      // Cập nhật cho Con
       await FirebaseFirestore.instance.collection('users').doc(childId).update({
         'following': FieldValue.arrayUnion([parentInfo])
       });
 
-      // B. Cập nhật cho CHA MẸ (Người được theo dõi): Lưu ID của CON vào 'childId' (duy nhất)
       await FirebaseFirestore.instance.collection('users').doc(parent.uid).update({
         'childId': childId,
         'childName': childName,
         'childAvatar': childAvatar,
       });
 
-      // 2. Xóa mã sau khi dùng xong
       await FirebaseFirestore.instance.collection('pairing_codes').doc(code).delete();
 
       if (mounted) {
@@ -155,10 +147,8 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
             child: Column(
               children: [
                 const SizedBox(height: 40),
-
-                // Hiển thị trạng thái nếu đã kết nối
                 if (isConnected)
-                  _buildConnectedProfile(user!)
+                  _buildConnectedProfile(user!.childId!)
                 else ...[
                   const Icon(Icons.family_restroom, size: 100, color: Color(0xFFFFA387)),
                   const SizedBox(height: 20),
@@ -167,7 +157,6 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
               ],
             ),
           ),
-
           if (_isScanning) _buildCameraOverlay(),
           if (_isConnecting) _buildLoadingOverlay(),
         ],
@@ -199,69 +188,81 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
     );
   }
 
-  Widget _buildConnectedProfile(dynamic user) {
-    final String name = user.childName ?? "Con của bạn";
-    final String? avatar = user.childAvatar;
+  Widget _buildConnectedProfile(String childId) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(childId).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Center(child: Text("Không tìm thấy dữ liệu người giám sát."));
+        }
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 25),
-        child: Column(
-          children: [
-            const Text(
-              "TÀI KHOẢN ĐANG GIÁM SÁT",
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
-            ),
-            const SizedBox(height: 30),
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final String name = data['name'] ?? "Con của bạn";
+        final String? avatar = data['avatar'];
 
-            // Hiển thị Avatar người con
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: const Color(0xFFFFC1A8),
-              backgroundImage: (avatar != null && avatar.isNotEmpty)
-                  ? MemoryImage(base64Decode(avatar))
-                  : null,
-              child: (avatar == null || avatar.isEmpty)
-                  ? const Icon(Icons.person, size: 70, color: Colors.white)
-                  : null,
-            ),
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 25),
+            child: Column(
+              children: [
+                const Text(
+                  "TÀI KHOẢN ĐANG GIÁM SÁT",
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+                ),
+                const SizedBox(height: 30),
+                
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFFC1A8)),
+                  child: ClipOval(
+                    child: (avatar != null && avatar.isNotEmpty)
+                        ? Image.memory(base64Decode(avatar), fit: BoxFit.cover, gaplessPlayback: true)
+                        : const Icon(Icons.person, size: 70, color: Colors.white),
+                  ),
+                ),
 
-            const SizedBox(height: 20),
-            Text(
-              name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Đã kết nối và đang bảo vệ bạn",
-              style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.w500),
-            ),
+                const SizedBox(height: 20),
+                Text(
+                  name,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Đã kết nối và đang bảo vệ bạn",
+                  style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.w500),
+                ),
 
-            const SizedBox(height: 50),
+                const SizedBox(height: 50),
 
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue),
-                  SizedBox(width: 15),
-                  Expanded(
-                    child: Text(
-                      "Người này có thể xem lịch trình uống thuốc, vị trí và nhận cảnh báo SOS của bạn.",
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
-                  )
-                ],
-              ),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue),
+                      SizedBox(width: 15),
+                      Expanded(
+                        child: Text(
+                          "Người này có thể xem lịch trình uống thuốc, vị trí và nhận cảnh báo SOS của bạn.",
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -271,7 +272,11 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)
+          )
+        ],
       ),
       child: Column(
         children: [

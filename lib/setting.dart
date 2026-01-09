@@ -147,7 +147,6 @@ class _SettingPageState extends State<SettingPage> {
                 final user = auth.userModel;
                 final userName = user?.name ?? "Người dùng";
                 final String? avatarBase64 = user?.avatar;
-                // Lấy tuổi từ model
                 final int userAge = user?.age ?? 0;
 
                 return Row(
@@ -157,15 +156,23 @@ class _SettingPageState extends State<SettingPage> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          CircleAvatar(
-                            radius: 35,
-                            backgroundColor: const Color(0xFFFFC1A8),
-                            backgroundImage: (avatarBase64 != null && avatarBase64.isNotEmpty)
-                                ? MemoryImage(base64Decode(avatarBase64))
-                                : null,
-                            child: (avatarBase64 == null || avatarBase64.isEmpty)
-                                ? const Icon(Icons.person, size: 45, color: Colors.white)
-                                : null,
+                          // Sử dụng Container + ClipOval thay cho CircleAvatar để dùng gaplessPlayback
+                          Container(
+                            width: 70,
+                            height: 70,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFFFFC1A8),
+                            ),
+                            child: ClipOval(
+                              child: (avatarBase64 != null && avatarBase64.isNotEmpty)
+                                  ? Image.memory(
+                                      base64Decode(avatarBase64),
+                                      fit: BoxFit.cover,
+                                      gaplessPlayback: true, // Chống nhấp nháy khi đổi ảnh
+                                    )
+                                  : const Icon(Icons.person, size: 45, color: Colors.white),
+                            ),
                           ),
                           if (_isUploading)
                             const CircularProgressIndicator(color: Colors.white),
@@ -249,16 +256,6 @@ class _SettingPageState extends State<SettingPage> {
                           );
                       }
                   ),
-                  _buildMenuItem(
-                      icon: Icons.switch_account_outlined,
-                      title: "Đổi vai trò",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const RoleSelectionPage()),
-                        );
-                      }),
                   _buildMenuItem(
                     icon: Icons.logout, 
                     title: "Đăng xuất", 

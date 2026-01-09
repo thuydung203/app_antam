@@ -8,6 +8,7 @@ import 'package:antam_app/image_gallery.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'models/medicine_model.dart';
+import 'models/checkup_model.dart';
 import 'models/checkin_model.dart';
 
 class ParentHomePage extends StatefulWidget {
@@ -63,19 +64,44 @@ class _ParentHomePageState extends State<ParentHomePage> {
     }
   }
 
-  Future<void> _handleSOS(BuildContext context) async {
-    const String childPhoneNumber = "0123456789"; 
-    final Uri launchUri = Uri(scheme: 'tel', path: childPhoneNumber);
-    
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
-      final user = Provider.of<AuthProvider>(context, listen: false).userModel;
-      await FirebaseFirestore.instance.collection('sos_alerts').add({
-        'from': user?.name ?? "Cha/Mẹ",
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'active',
-      });
+  // HÀM XỬ LÝ GỌI (GSM) - CÓ THÊM KIỂM TRA VÀ THÔNG BÁO
+  Future<void> _makeCall(BuildContext context, String? phoneNumber) async {
+    if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Con chưa cập nhật số điện thoại!")),
+      );
+      return;
     }
+
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Không thể mở trình gọi điện.")),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi gọi điện: $e");
+    }
+  }
+
+  // HÀM XỬ LÝ SOS (Gửi cảnh báo + Gọi)
+  Future<void> _handleSOS(BuildContext context, String? childPhone) async {
+    final user = Provider.of<AuthProvider>(context, listen: false).userModel;
+    
+    // Gửi tín hiệu SOS lên Firebase
+    await FirebaseFirestore.instance.collection('sos_alerts').add({
+      'from': user?.name ?? "Cha/Mẹ",
+      'timestamp': FieldValue.serverTimestamp(),
+      'status': 'active',
+    });
+
+    // Thực hiện cuộc gọi
+    await _makeCall(context, childPhone);
   }
 
   Future<void> _handleCheckIn(String medicineId) async {
@@ -139,10 +165,9 @@ class _ParentHomePageState extends State<ParentHomePage> {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.userModel;
 
-    // LẤY ID CỦA NGƯỜI CON ĐẦU TIÊN TRONG DANH SÁCH FOLLOWING ĐỂ HIỆN ẢNH
-    String? firstChildId;
-    if (user?.following != null && user!.following!.isNotEmpty) {
-      firstChildId = user.following!.first['uid'];
+    String? idToTrack = user?.childId;
+    if ((idToTrack == null || idToTrack.isEmpty) && user?.following != null && user!.following!.isNotEmpty) {
+      idToTrack = user.following!.first['uid'];
     }
 
     return Scaffold(
@@ -151,6 +176,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
         backgroundColor: Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
+        title: const Text('ANTÂM', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.black54),
@@ -158,39 +185,50 @@ class _ParentHomePageState extends State<ParentHomePage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22.0),
-          child: Column(
-            children: [
-              // Sử dụng ID người con tìm được từ danh sách following
-              _buildSlideshow(firstChildId),
-
-              const SizedBox(height: 30),
-
-              _buildCheckInButton(user?.uid),
-
-              const SizedBox(height: 10),
-              _buildLargeButton(
-                title: 'SOS KHẨN CẤP',
-                color: const Color(0xFFF94133),
-                onPressed: () => _handleSOS(context),
-              ),
-
-              const SizedBox(height: 15),
+      body: idToTrack == null 
+        ? const Center(child: Text("Đang chờ kết nối với con..."))
+        : StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('users').doc(idToTrack).snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) return Center(child: Text("Lỗi: ${snapshot.error}"));
               
-              _buildLargeButton(
-                title: 'GỌI CON',
-                color: const Color(0xFF78EC46),
-                icon: Icons.call,
-                onPressed: () => _handleSOS(context), 
-              ),
+              final childData = snapshot.data?.data() as Map<String, dynamic>?;
+              final String? childPhone = childData?['phone'];
 
-              const SizedBox(height: 50),
-            ],
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22.0),
+                  child: Column(
+                    children: [
+                      _buildSlideshow(idToTrack),
+                      const SizedBox(height: 30),
+                      _buildCheckInButton(user?.uid),
+                      const SizedBox(height: 10),
+                      
+                      // NÚT SOS: Gọi số điện thoại của con (Real-time)
+                      _buildLargeButton(
+                        title: 'SOS KHẨN CẤP', 
+                        color: const Color(0xFFF94133), 
+                        onPressed: () => _handleSOS(context, childPhone)
+                      ),
+                      
+                      const SizedBox(height: 15),
+                      
+                      // NÚT GỌI CON: Gọi số điện thoại của con (Real-time)
+                      _buildLargeButton(
+                        title: 'GỌI CON', 
+                        color: const Color(0xFF78EC46), 
+                        icon: Icons.call, 
+                        onPressed: () => _makeCall(context, childPhone)
+                      ),
+
+                      const SizedBox(height: 50),
+                    ],
+                  ),
+                ),
+              );
+            }
           ),
-        ),
-      ),
     );
   }
 
@@ -237,13 +275,8 @@ class _ParentHomePageState extends State<ParentHomePage> {
       return Container(
         height: 350,
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Center(
-          child: Text("Chưa có ảnh gia đình nào được tải lên", style: TextStyle(color: Colors.grey)),
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)),
+        child: const Center(child: Text("Kết nối với con để xem ảnh gia đình", style: TextStyle(color: Colors.grey))),
       );
     }
 
@@ -251,13 +284,20 @@ class _ParentHomePageState extends State<ParentHomePage> {
       stream: FirebaseFirestore.instance
           .collection('images')
           .where('userId', isEqualTo: childId)
-          .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        final docs = snapshot.data?.docs ?? [];
+        if (snapshot.connectionState == ConnectionState.waiting) return const SizedBox(height: 350, child: Center(child: CircularProgressIndicator()));
+        final List<QueryDocumentSnapshot> docs = snapshot.data?.docs.toList() ?? [];
         if (docs.isEmpty) return Container(height: 350, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)), child: const Center(child: Text("Đang chờ ảnh từ con...")));
-        
-        _timer?.cancel(); // Tránh tạo nhiều timer chồng chéo
+
+        docs.sort((a, b) {
+          final aTime = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+          final bTime = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+          if (aTime == null || bTime == null) return 0;
+          return bTime.compareTo(aTime);
+        });
+
+        _timer?.cancel(); 
         _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
           if (_currentPage < docs.length - 1) _currentPage++; else _currentPage = 0;
           if (_pageController.hasClients) {
@@ -266,7 +306,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
         });
 
         return GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ImageGalleryPage())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ImageGalleryPage(childId: childId))),
           child: SizedBox(
             height: 350,
             child: ClipRRect(
@@ -276,7 +316,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
                 itemCount: docs.length,
                 onPageChanged: (index) => _currentPage = index,
                 itemBuilder: (context, index) {
-                  final String base64Str = docs[index]['base64String'] ?? '';
+                  final String base64Str = (docs[index].data() as Map<String, dynamic>)['base64String'] ?? '';
                   return Image.memory(base64Decode(base64Str), fit: BoxFit.cover, gaplessPlayback: true);
                 },
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:antam_app/services/auth_service.dart';
 
 class SecurityPage extends StatefulWidget {
   const SecurityPage({super.key});
@@ -9,12 +10,97 @@ class SecurityPage extends StatefulWidget {
 }
 
 class _SettingSecurityLoginPageState extends State<SecurityPage> {
+  final AuthService _authService = AuthService();
+  
   // Trạng thái các Switch
-  bool isChangePassword = true;
   bool isBiometricLogin = false;
   bool isLoginAlert = true;
   bool isDeviceManagement = true;
   bool isLoginHistory = true;
+
+  final _currentPassCtrl = TextEditingController();
+  final _newPassCtrl = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
+
+  // Hàm hiển thị hộp thoại đổi mật khẩu
+  void _showChangePasswordDialog() {
+    _currentPassCtrl.clear();
+    _newPassCtrl.clear();
+    _confirmPassCtrl.clear();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Đổi mật khẩu"),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _currentPassCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Mật khẩu hiện tại"),
+              ),
+              TextField(
+                controller: _newPassCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Mật khẩu mới"),
+              ),
+              TextField(
+                controller: _confirmPassCtrl,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Xác nhận mật khẩu mới"),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Hủy"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_newPassCtrl.text != _confirmPassCtrl.text) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Mật khẩu mới không khớp")),
+                );
+                return;
+              }
+              
+              try {
+                await _authService.changePassword(
+                  _currentPassCtrl.text,
+                  _newPassCtrl.text,
+                );
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Đổi mật khẩu thành công!")),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(e.toString())),
+                  );
+                }
+              }
+            },
+            child: const Text("Lưu thay đổi"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _currentPassCtrl.dispose();
+    _newPassCtrl.dispose();
+    _confirmPassCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,42 +124,15 @@ class _SettingSecurityLoginPageState extends State<SecurityPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ----------------- Đăng nhập & mật khẩu -------------------
-            _buildSectionTitle("Đăng nhập và Mật khẩu"),
-            _buildSwitchTile(
+            // SỬA: Chuyển "Đổi mật khẩu" thành nút nhấn điều hướng
+            _buildNavigationTile(
               title: "Đổi mật khẩu",
-              value: isChangePassword,
-              onChanged: (val) => setState(() => isChangePassword = val),
+              onTap: _showChangePasswordDialog,
             ),
+            
             _buildNavigationTile(
               title: "Đăng nhập bằng sinh trắc học",
               onTap: () {},
-            ),
-
-            const SizedBox(height: 20),
-
-            // ----------------- Bảo mật nâng cao -------------------
-            _buildSectionTitle("Bảo mật nâng cao"),
-            _buildSwitchTile(
-              title: "Cảnh báo đăng nhập mới",
-              value: isLoginAlert,
-              onChanged: (val) => setState(() => isLoginAlert = val),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ----------------- Hoạt động của tài khoản -------------------
-            _buildSectionTitle("Hoạt động của tài khoản"),
-            _buildSwitchTile(
-              title: "Quản lý thiết bị đăng nhập",
-              value: isDeviceManagement,
-              onChanged: (val) => setState(() => isDeviceManagement = val),
-            ),
-            _buildSwitchTile(
-              title: "Lịch sử đăng nhập",
-              value: isLoginHistory,
-              onChanged: (val) => setState(() => isLoginHistory = val),
             ),
           ],
         ),
@@ -81,19 +140,16 @@ class _SettingSecurityLoginPageState extends State<SecurityPage> {
     );
   }
 
-  // Widget tiêu đề nhóm
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style:
-            const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
       ),
     );
   }
 
-  // Ô có switch
   Widget _buildSwitchTile({
     required String title,
     required bool value,
@@ -119,7 +175,6 @@ class _SettingSecurityLoginPageState extends State<SecurityPage> {
     );
   }
 
-  // Ô điều hướng (có mũi tên)
   Widget _buildNavigationTile({
     required String title,
     required Function() onTap,
@@ -127,7 +182,7 @@ class _SettingSecurityLoginPageState extends State<SecurityPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 12), // Sửa từ symmetric(bottom: 12) thành only(bottom: 12)
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: const Color(0xFFF8F6F6),
