@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class CheckInHistoryPage extends StatefulWidget {
-  const CheckInHistoryPage({super.key});
+  final String? targetUserId;
+  const CheckInHistoryPage({super.key, this.targetUserId});
 
   @override
   State<CheckInHistoryPage> createState() => _CheckInHistoryPageState();
@@ -163,9 +164,9 @@ class _CheckInHistoryPageState extends State<CheckInHistoryPage> {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.userModel;
     
-    // ĐÃ SỬA: Lấy ID người thân đầu tiên từ danh sách following thay vì parentIds
-    String targetId = user?.uid ?? "";
-    if (user?.role == 'child' && user?.following != null && user!.following!.isNotEmpty) {
+    // Ưu tiên targetUserId truyền vào, nếu không thì lấy logic cũ
+    String targetId = widget.targetUserId ?? user?.uid ?? "";
+    if (widget.targetUserId == null && user?.role == 'child' && user?.following != null && user!.following!.isNotEmpty) {
       targetId = user.following!.first['uid'] ?? user.uid;
     }
 
