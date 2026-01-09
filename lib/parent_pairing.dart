@@ -86,7 +86,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
         'phone': parent.phone,
         'age': parent.age,
         'role': 'parent',
-        'connectedAt': FieldValue.serverTimestamp(),
+        'connectedAt': DateTime.now(),
       };
 
       await FirebaseFirestore.instance.collection('users').doc(childId).update({
