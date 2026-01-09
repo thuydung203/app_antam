@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:antam_app/parent_setting.dart';
 import 'package:antam_app/providers/auth_provider.dart';
 import 'package:antam_app/setting.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -181,7 +182,7 @@ class _ParentHomePageState extends State<ParentHomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.black54),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingPage())),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ParentSettingPage())),
           ),
         ],
       ),
