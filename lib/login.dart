@@ -6,6 +6,8 @@ import 'providers/auth_provider.dart';
 
 import 'signup.dart';
 import 'roleselection.dart';
+import 'main_navigation.dart';
+import 'parent_navigation.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -69,15 +71,46 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       // Sử dụng AuthProvider để đăng nhập
-      await Provider.of<AuthProvider>(context, listen: false).signIn(email, password);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await authProvider.signIn(email, password);
 
       if (!mounted) return;
 
-      // THÀNH CÔNG -> sang trang RoleSelection
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
-      );
+      // Đợi một chút để AuthProvider load userModel
+      int retry = 0;
+      while (authProvider.userModel == null && retry < 10) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        retry++;
+      }
+
+      final userModel = authProvider.userModel;
+
+      // Kiểm tra role và chuyển đến trang tương ứng
+      if (userModel == null || userModel.role == 'none' || userModel.role == '') {
+        // Chưa có role -> Chọn vai trò
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
+        );
+      } else if (userModel.role == 'child') {
+        // Vai trò CON -> Vào app con
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigation()),
+        );
+      } else if (userModel.role == 'parent') {
+        // Vai trò CHA MẸ -> Vào app cha mẹ
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentNavigation()),
+        );
+      } else {
+        // Trường hợp không xác định -> Chọn lại vai trò
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RoleSelectionPage()),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       final msg = _friendlyAuthError(e);

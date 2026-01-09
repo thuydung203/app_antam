@@ -4,7 +4,8 @@ import 'package:antam_app/settings_page.dart';
 import 'package:antam_app/check_in_history.dart';
 import 'package:antam_app/create_medicine.dart';
 import 'package:antam_app/create_checkup.dart';
-import 'package:antam_app/following.dart';
+
+import 'package:antam_app/paring.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -97,24 +98,47 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     final authProvider = Provider.of<AuthProvider>(context);
     final userModel = authProvider.userModel;
 
-    // LOGIC HIỂN THỊ THÔNG MINH
-    // Nếu có người được chọn từ Following -> Hiện người đó
-    // Nếu không (lần đầu đăng ký) -> Hiện chính mình
-    final String displayName = widget.selectedPerson != null 
-        ? widget.selectedPerson!['name'] 
-        : (userModel?.name ?? "Người dùng");
-    
-    final int displayAge = widget.selectedPerson != null 
-        ? widget.selectedPerson!['age'] 
-        : (userModel?.age ?? 0);
-
-    final String? avatarBase64 = widget.selectedPerson != null 
-        ? widget.selectedPerson!['avatar'] 
-        : userModel?.avatar;
-
     if (userModel == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    // LOGIC HIỂN THỊ THÔNG MINH
+    // 1. Nếu có người được chọn từ Following -> Hiện người đó
+    // 2. Nếu không, lấy cha mẹ đầu tiên trong danh sách following
+    // 3. Nếu chưa kết nối với ai -> Hiện placeholder
+    
+    Map<String, dynamic>? displayPerson;
+    
+    if (widget.selectedPerson != null) {
+      // Trường hợp 1: Đã chọn người cụ thể
+      displayPerson = widget.selectedPerson;
+    } else if (userModel.following != null && userModel.following!.isNotEmpty) {
+      // Trường hợp 2: Lấy cha mẹ đầu tiên trong danh sách
+      displayPerson = userModel.following!.first;
+    }
+    
+    // Nếu chưa có cha mẹ nào -> Hiển thị màn hình hướng dẫn kết nối
+    if (displayPerson == null) {
+      return _buildNoParentScreen();
+    }
+
+    final String displayName = displayPerson['name'] ?? "Chưa rõ";
+    final String? avatarBase64 = displayPerson['avatar'];
+    
+    // Tính tuổi từ birthDate nếu có
+    int displayAge = 0;
+    if (displayPerson['birthDate'] != null) {
+      final birthDate = (displayPerson['birthDate'] as Timestamp).toDate();
+      final now = DateTime.now();
+      displayAge = now.year - birthDate.year;
+      if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
+        displayAge--;
+      }
+    } else if (displayPerson['age'] != null) {
+      displayAge = displayPerson['age'];
+    }
+
+    final String targetUserId = displayPerson['uid'] ?? userModel.uid;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
@@ -139,7 +163,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             ),
             
             StreamBuilder<List<MedicineModel>>(
-              stream: _dbService.getMedicines(userModel.uid),
+              stream: _dbService.getMedicines(targetUserId), // Lấy thuốc của cha mẹ
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
                 final medicines = snapshot.data ?? [];
@@ -154,7 +178,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
             ),
             
             StreamBuilder<List<CheckupModel>>(
-              stream: _dbService.getCheckups(userModel.uid),
+              stream: _dbService.getCheckups(targetUserId), // Lấy lịch khám của cha mẹ
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
                 final checkups = snapshot.data ?? [];
@@ -290,6 +314,79 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoParentScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF7F7),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFF7F7),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text("Trang chủ", style: TextStyle(color: Colors.black)),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.family_restroom,
+                size: 120,
+                color: Color(0xFFFFA387),
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                "Chưa kết nối với Cha/Mẹ",
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 15),
+              const Text(
+                "Bạn cần kết nối với cha mẹ để theo dõi sức khỏe của họ.\n\nHãy nhấn nút bên dưới để bắt đầu kết nối!",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PairingExpiredPage()),
+                    );
+                  },
+                  icon: const Icon(Icons.link, color: Colors.white),
+                  label: const Text(
+                    "KẾT NỐI VỚI CHA MẸ",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFFA387),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

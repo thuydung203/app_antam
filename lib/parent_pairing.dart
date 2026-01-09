@@ -44,7 +44,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
     super.dispose();
   }
 
-  // LOGIC KẾT NỐI
+  // LOGIC KẾT NỐI: 1 CHA MẸ CHỈ CÓ 1 CON THEO DÕI
   Future<void> _handleConnect() async {
     final String code = _inputController.text.trim();
     if (code.isEmpty) return;
@@ -57,10 +57,12 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
 
       if (parent == null) throw "Vui lòng đăng nhập lại.";
 
+      // KIỂM TRA: Nếu Cha Mẹ đã có con theo dõi rồi thì báo lỗi ngay
       if (parent.childId != null && parent.childId!.isNotEmpty) {
         throw "Tài khoản này đã kết nối với một người con khác.";
       }
 
+      // 1. Tìm mã của Con trong collection pairing_codes
       final doc = await FirebaseFirestore.instance.collection('pairing_codes').doc(code).get();
       if (!doc.exists) throw "Mã kết nối không hợp lệ hoặc đã hết hạn.";
 
@@ -72,7 +74,9 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
 
       if (DateTime.now().isAfter(expiresAt)) throw "Mã đã hết hạn.";
 
-      // 3. Thực hiện kết nối hai chiều
+      // --- THỰC HIỆN KẾT NỐI ---
+
+      // A. Cập nhật cho CON (Người theo dõi): Thêm thông tin CHA MẸ vào danh sách 'following'
       final Map<String, dynamic> parentInfo = {
         'uid': parent.uid,
         'name': parent.name,
@@ -88,14 +92,14 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
         'following': FieldValue.arrayUnion([parentInfo])
       });
 
-      // Cập nhật cho Cha Mẹ (Lưu cả tên và ảnh con)
+      // B. Cập nhật cho CHA MẸ (Người được theo dõi): Lưu ID của CON vào 'childId' (duy nhất)
       await FirebaseFirestore.instance.collection('users').doc(parent.uid).update({
         'childId': childId,
         'childName': childName,
         'childAvatar': childAvatar,
       });
 
-      // Xóa mã
+      // 2. Xóa mã sau khi dùng xong
       await FirebaseFirestore.instance.collection('pairing_codes').doc(code).delete();
 
       if (mounted) {
@@ -141,7 +145,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: Text(isConnected ? "Người giám sát" : "Kết nối gia đình", 
+        title: Text(isConnected ? "Người giám sát" : "Kết nối gia đình",
           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
@@ -151,9 +155,9 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                
+
                 // Hiển thị trạng thái nếu đã kết nối
-                if (isConnected) 
+                if (isConnected)
                   _buildConnectedProfile(user!)
                 else ...[
                   const Icon(Icons.family_restroom, size: 100, color: Color(0xFFFFA387)),
@@ -209,7 +213,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
             ),
             const SizedBox(height: 30),
-            
+
             // Hiển thị Avatar người con
             CircleAvatar(
               radius: 60,
@@ -221,7 +225,7 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
                   ? const Icon(Icons.person, size: 70, color: Colors.white)
                   : null,
             ),
-            
+
             const SizedBox(height: 20),
             Text(
               name,
@@ -232,9 +236,9 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
               "Đã kết nối và đang bảo vệ bạn",
               style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.w500),
             ),
-            
+
             const SizedBox(height: 50),
-            
+
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
