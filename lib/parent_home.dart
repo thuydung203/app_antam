@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'models/medicine_model.dart';
 import 'models/checkup_model.dart';
 import 'models/checkin_model.dart';
+import 'services/database_service.dart';
 
 class ParentHomePage extends StatefulWidget {
   const ParentHomePage({super.key});
@@ -108,55 +109,16 @@ class _ParentHomePageState extends State<ParentHomePage> {
     final user = Provider.of<AuthProvider>(context, listen: false).userModel;
     if (user == null) return;
 
-    await FirebaseFirestore.instance.collection('medicines').doc(medicineId).update({
-      'isConfirmed': true,
-      'confirmedAt': FieldValue.serverTimestamp(),
-    });
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final allMedicinesSnapshot = await FirebaseFirestore.instance
-        .collection('medicines')
-        .where('userId', isEqualTo: user.uid)
-        .get();
-
-    final todayMedicines = allMedicinesSnapshot.docs.where((doc) {
-      final data = doc.data();
-      final repeatDays = List<String>.from(data['repeatDays'] ?? []);
-      if (repeatDays.isEmpty) return true;
-      final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      final todayName = weekdayNames[now.weekday - 1];
-      return repeatDays.contains(todayName);
-    }).toList();
-
-    final confirmedCount = todayMedicines.where((doc) {
-      final data = doc.data();
-      return data['isConfirmed'] == true;
-    }).length;
-
-    if (todayMedicines.isNotEmpty && confirmedCount == todayMedicines.length) {
-      final checkInData = CheckInModel(
-        id: '${user.uid}_${today.year}-${today.month}-${today.day}',
-        userId: user.uid,
-        date: today,
-        status: true,
+    await DatabaseService().confirmMedicineIntake(medicineId, user.uid);
+    // Success snackbar is already handled by the logic flow if needed, 
+    // but we can add a specific one here if this method is called from UI.
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("🎉 Đã xác nhận uống thuốc!"),
+          backgroundColor: Colors.green,
+        ),
       );
-
-      await FirebaseFirestore.instance
-          .collection('checkins')
-          .doc(checkInData.id)
-          .set(checkInData.toMap());
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("🎉 Đã uống đủ thuốc hôm nay! Check-in thành công!"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
     }
   }
 
@@ -202,7 +164,6 @@ class _ParentHomePageState extends State<ParentHomePage> {
                     children: [
                       _buildSlideshow(idToTrack),
                       const SizedBox(height: 30),
-                      _buildCheckInButton(user?.uid),
                       const SizedBox(height: 10),
                       
                       // NÚT SOS: Gọi số điện thoại của con (Real-time)
@@ -286,37 +247,62 @@ class _ParentHomePageState extends State<ParentHomePage> {
           .where('userId', isEqualTo: childId)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) return const SizedBox(height: 350, child: Center(child: CircularProgressIndicator()));
-        final List<QueryDocumentSnapshot> docs = snapshot.data?.docs.toList() ?? [];
-        if (docs.isEmpty) return Container(height: 350, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)), child: const Center(child: Text("Đang chờ ảnh từ con...")));
+        if (snapshot.hasError) {
+          return Container(
+            height: 350,
+            decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20)),
+            child: Center(child: Text("Lỗi: ${snapshot.error}", style: const TextStyle(color: Colors.red, fontSize: 12))),
+          );
+        }
 
-        docs.sort((a, b) {
-          final aTime = (a.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
-          final bTime = (b.data() as Map<String, dynamic>)['createdAt'] as Timestamp?;
+        final docs = snapshot.data?.docs ?? [];
+        if (docs.isEmpty) {
+          return Container(
+            height: 350, 
+            decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(20)), 
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Đang chờ ảnh từ con...", style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 8),
+                Text("Vui lòng bảo con tải ảnh lên.", style: TextStyle(color: Colors.grey.shade400, fontSize: 10)),
+              ],
+            )
+          );
+        }
+        
+        // Sắp xếp thủ công nếu không có index
+        final sortedDocs = List.from(docs);
+        sortedDocs.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+          final aTime = dataA['createdAt'] as Timestamp?;
+          final bTime = dataB['createdAt'] as Timestamp?;
           if (aTime == null || bTime == null) return 0;
           return bTime.compareTo(aTime);
         });
 
         _timer?.cancel(); 
         _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
-          if (_currentPage < docs.length - 1) _currentPage++; else _currentPage = 0;
+          if (_currentPage < sortedDocs.length - 1) _currentPage++; else _currentPage = 0;
           if (_pageController.hasClients) {
             _pageController.animateToPage(_currentPage, duration: const Duration(milliseconds: 600), curve: Curves.easeInOut);
           }
         });
 
         return GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ImageGalleryPage(childId: childId))),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ImageGalleryPage(userId: childId))),
           child: SizedBox(
             height: 350,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: PageView.builder(
                 controller: _pageController,
-                itemCount: docs.length,
+                itemCount: sortedDocs.length,
                 onPageChanged: (index) => _currentPage = index,
                 itemBuilder: (context, index) {
-                  final String base64Str = (docs[index].data() as Map<String, dynamic>)['base64String'] ?? '';
+                  final data = sortedDocs[index].data() as Map<String, dynamic>;
+                  final String base64Str = data['base64String'] ?? '';
                   return Image.memory(base64Decode(base64Str), fit: BoxFit.cover, gaplessPlayback: true);
                 },
               ),

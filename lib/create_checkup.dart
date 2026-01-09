@@ -5,7 +5,8 @@ import 'providers/auth_provider.dart';
 import 'services/database_service.dart';
 
 class CreateCheckupPage extends StatefulWidget {
-  const CreateCheckupPage({super.key});
+  final String? targetUserId;
+  const CreateCheckupPage({super.key, this.targetUserId});
 
   @override
   State<CreateCheckupPage> createState() => _CreateCheckupPageState();
@@ -45,7 +46,7 @@ class _CreateCheckupPageState extends State<CreateCheckupPage> {
         hospitalName: _checkupNameController.text.trim(),
         date: checkupDate,
         result: '', // Mặc định rỗng
-        userId: user.uid,
+        userId: widget.targetUserId ?? user.uid,
       );
 
       try {

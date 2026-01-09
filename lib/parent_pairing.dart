@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:antam_app/providers/auth_provider.dart';
+import 'package:antam_app/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -192,16 +193,14 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance.collection('users').doc(childId).snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Center(child: Text("Không tìm thấy dữ liệu người giám sát."));
-        }
+        String name = "Con của bạn";
+        String? avatar;
 
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-        final String name = data['name'] ?? "Con của bạn";
-        final String? avatar = data['avatar'];
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          name = data['name'] ?? name;
+          avatar = data['avatar'];
+        }
 
         return Center(
           child: Padding(
@@ -213,16 +212,16 @@ class _ParentPairingPageState extends State<ParentPairingPage> {
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
                 ),
                 const SizedBox(height: 30),
-                
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFFC1A8)),
-                  child: ClipOval(
-                    child: (avatar != null && avatar.isNotEmpty)
-                        ? Image.memory(base64Decode(avatar), fit: BoxFit.cover, gaplessPlayback: true)
-                        : const Icon(Icons.person, size: 70, color: Colors.white),
-                  ),
+
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: const Color(0xFFFFC1A8),
+                  backgroundImage: (avatar != null && avatar.isNotEmpty)
+                      ? MemoryImage(base64Decode(avatar))
+                      : null,
+                  child: (avatar == null || avatar.isEmpty)
+                      ? const Icon(Icons.person, size: 70, color: Colors.white)
+                      : null,
                 ),
 
                 const SizedBox(height: 20),
