@@ -4,8 +4,8 @@ import 'package:antam_app/settings_page.dart';
 import 'package:antam_app/check_in_history.dart';
 import 'package:antam_app/create_medicine.dart';
 import 'package:antam_app/create_checkup.dart';
-
 import 'package:antam_app/paring.dart';
+import 'package:antam_app/models/checkin_model.dart'; // Đã thêm dòng import này
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -102,107 +102,70 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // LOGIC HIỂN THỊ THÔNG MINH
-    // 1. Nếu có người được chọn từ Following -> Hiện người đó
-    // 2. Nếu không, lấy cha mẹ đầu tiên trong danh sách following
-    // 3. Nếu chưa kết nối với ai -> Hiện placeholder
-    
-    Map<String, dynamic>? displayPerson;
-    
+    // LOGIC: Nếu không có người chọn từ Following, tự động lấy người đầu tiên trong danh sách cha mẹ
+    String? targetUserId;
+    String displayName = "Người dùng";
+    int displayAge = 0;
+    String? avatarBase64;
+
     if (widget.selectedPerson != null) {
-      // Trường hợp 1: Đã chọn người cụ thể
-      displayPerson = widget.selectedPerson;
+      targetUserId = widget.selectedPerson!['uid'];
+      displayName = widget.selectedPerson!['name'] ?? "Cha/Mẹ";
+      displayAge = widget.selectedPerson!['age'] ?? 0;
+      avatarBase64 = widget.selectedPerson!['avatar'];
     } else if (userModel.following != null && userModel.following!.isNotEmpty) {
-      // Trường hợp 2: Lấy cha mẹ đầu tiên trong danh sách
-      displayPerson = userModel.following!.first;
+      final firstParent = userModel.following!.first;
+      targetUserId = firstParent['uid'];
+      displayName = firstParent['name'] ?? "Cha/Mẹ";
+      displayAge = firstParent['age'] ?? 0;
+      avatarBase64 = firstParent['avatar'];
     }
-    
-    // Nếu chưa có cha mẹ nào -> Hiển thị màn hình hướng dẫn kết nối
-    if (displayPerson == null) {
+
+    // Nếu vẫn không có ai để theo dõi (trường hợp mới đăng ký chưa kết nối)
+    if (targetUserId == null) {
       return _buildNoParentScreen();
     }
-
-    final String displayName = displayPerson['name'] ?? "Chưa rõ";
-    final String? avatarBase64 = displayPerson['avatar'];
-    
-    // Tính tuổi từ birthDate nếu có
-    int displayAge = 0;
-    if (displayPerson['birthDate'] != null) {
-      final birthDate = (displayPerson['birthDate'] as Timestamp).toDate();
-      final now = DateTime.now();
-      displayAge = now.year - birthDate.year;
-      if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
-        displayAge--;
-      }
-    } else if (displayPerson['age'] != null) {
-      displayAge = displayPerson['age'];
-    }
-
-    final String targetUserId = displayPerson['uid'] ?? userModel.uid;
-    debugPrint("ChildrenHomePage: viewing medicines for $targetUserId");
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF7F7),
         elevation: 0,
-        automaticallyImplyLeading: false, // Tắt nút back mặc định
+        automaticallyImplyLeading: false, 
         leading: widget.selectedPerson != null ? IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context), // Chỉ hiện nút back khi xem người khác
+          onPressed: () => Navigator.pop(context),
         ) : null,
+        title: const Text("ANTÂM", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildCheckupWarning(targetUserId),
+            // CẢNH BÁO ĐỘNG (Lấy từ dữ liệu cha mẹ)
             _buildDynamicWarning(targetUserId),
+            _buildCheckupWarning(targetUserId),
+            
             _userInfo(displayName, avatarBase64, displayAge),
 
             _sectionHeader(
               title: "TRẠNG THÁI UỐNG THUỐC",
-              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CreateMedicinePage(targetUserId: targetUserId))),
+              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateMedicinePage())),
             ),
             
             StreamBuilder<List<MedicineModel>>(
               stream: _dbService.getMedicines(targetUserId), // Lấy thuốc của cha mẹ
               builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text("Lỗi tải dữ liệu: ${snapshot.error}", style: const TextStyle(color: Colors.red)),
-                  );
-                }
                 if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-                final allMedicines = snapshot.data ?? [];
-                
-                // Lọc thuốc theo ngày trong tuần
-                final now = DateTime.now();
-                final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-                final todayName = weekdayNames[now.weekday - 1];
-
                 final medicines = snapshot.data ?? [];
-                
-                if (medicines.isEmpty) {
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          "Chưa có đơn thuốc nào.",
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  );
-                }
+                if (medicines.isEmpty) return const Padding(padding: EdgeInsets.all(16.0), child: Text("Chưa có đơn thuốc nào."));
                 return Column(children: medicines.map((med) => _medicineCard(med, () => _dbService.deleteMedicine(med.id))).toList());
               },
             ),
 
             _sectionHeader(
               title: "LỊCH TÁI KHÁM",
-              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CreateCheckupPage(targetUserId: targetUserId))),
+              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateCheckupPage())),
             ),
             
             StreamBuilder<List<CheckupModel>>(
@@ -270,7 +233,6 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
         final now = DateTime.now();
         final tomorrow = now.add(const Duration(hours: 24));
 
-        // Tìm lịch khám trong 24h tới và chưa qua
         final upcomingCheckups = snapshot.data!.where((c) {
           return c.date.isAfter(now) && c.date.isBefore(tomorrow);
         }).toList();
@@ -287,7 +249,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFE3F2FD), // Màu xanh nhạt cho lịch khám
+              color: const Color(0xFFE3F2FD),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.blue.shade200),
             ),
@@ -317,13 +279,12 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
           return const SizedBox.shrink();
         }
 
-        // Lọc thuốc theo ngày trong tuần
         final now = DateTime.now();
         final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         final todayName = weekdayNames[now.weekday - 1];
 
         final todayMeds = snapshot.data!.where((m) {
-          if (m.repeatDays.isEmpty) return true; // Hàng ngày
+          if (m.repeatDays.isEmpty) return true;
           return m.repeatDays.contains(todayName);
         }).toList();
 
@@ -333,7 +294,6 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
           return const SizedBox.shrink();
         }
 
-        // Ưu tiên hiển thị thuốc nào chưa uống
         final med = unconfirmedMeds.first;
 
         return Padding(
@@ -459,7 +419,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
                     ElevatedButton(
                       onPressed: () => Navigator.push(
                         context, 
-                        MaterialPageRoute(builder: (context) => CheckInHistoryPage(targetUserId: userId))
+                        MaterialPageRoute(builder: (context) => CheckInHistoryPage())
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFFFA387), 
@@ -492,55 +452,22 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.family_restroom,
-                size: 120,
-                color: Color(0xFFFFA387),
-              ),
+              const Icon(Icons.family_restroom, size: 120, color: Color(0xFFFFA387)),
               const SizedBox(height: 30),
-              const Text(
-                "Chưa kết nối với Cha/Mẹ",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              const Text("Chưa kết nối với Cha/Mẹ", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
               const SizedBox(height: 15),
-              const Text(
-                "Bạn cần kết nối với cha mẹ để theo dõi sức khỏe của họ.\n\nHãy nhấn nút bên dưới để bắt đầu kết nối!",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              const Text("Bạn cần kết nối với cha mẹ để theo dõi sức khỏe của họ.\n\nHãy nhấn nút bên dưới để bắt đầu kết nối!", style: TextStyle(fontSize: 16, color: Colors.black54), textAlign: TextAlign.center),
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const PairingExpiredPage()),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const PairingExpiredPage()));
                   },
                   icon: const Icon(Icons.link, color: Colors.white),
-                  label: const Text(
-                    "KẾT NỐI VỚI CHA MẸ",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFA387),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
+                  label: const Text("KẾT NỐI VỚI CHA MẸ", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFA387), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
                 ),
               ),
             ],
