@@ -139,6 +139,7 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     }
 
     final String targetUserId = displayPerson['uid'] ?? userModel.uid;
+    debugPrint("ChildrenHomePage: viewing medicines for $targetUserId");
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF7F7),
@@ -159,22 +160,48 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
 
             _sectionHeader(
               title: "TRẠNG THÁI UỐNG THUỐC",
-              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateMedicinePage())),
+              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CreateMedicinePage(targetUserId: targetUserId))),
             ),
             
             StreamBuilder<List<MedicineModel>>(
               stream: _dbService.getMedicines(targetUserId), // Lấy thuốc của cha mẹ
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text("Lỗi tải dữ liệu: ${snapshot.error}", style: const TextStyle(color: Colors.red)),
+                  );
+                }
                 if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                final allMedicines = snapshot.data ?? [];
+                
+                // Lọc thuốc theo ngày trong tuần
+                final now = DateTime.now();
+                final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                final todayName = weekdayNames[now.weekday - 1];
+
                 final medicines = snapshot.data ?? [];
-                if (medicines.isEmpty) return const Padding(padding: EdgeInsets.all(16.0), child: Text("Chưa có đơn thuốc nào."));
+                
+                if (medicines.isEmpty) {
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          "Chưa có đơn thuốc nào.",
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  );
+                }
                 return Column(children: medicines.map((med) => _medicineCard(med, () => _dbService.deleteMedicine(med.id))).toList());
               },
             ),
 
             _sectionHeader(
               title: "LỊCH TÁI KHÁM",
-              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateCheckupPage())),
+              onAdd: () => Navigator.push(context, MaterialPageRoute(builder: (context) => CreateCheckupPage(targetUserId: targetUserId))),
             ),
             
             StreamBuilder<List<CheckupModel>>(
@@ -242,21 +269,25 @@ class _ChildrenHomePageState extends State<ChildrenHomePage> {
     );
   }
 
-  Widget _sectionHeader({required String title, VoidCallback? onAdd}) {
+  Widget _sectionHeader({required String title, VoidCallback? onAdd, Widget? trailing}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          if (onAdd != null) IconButton(icon: const Icon(Icons.add, size: 26), onPressed: onAdd),
+          if (trailing != null) 
+            trailing
+          else if (onAdd != null) 
+            IconButton(icon: const Icon(Icons.add, size: 26), onPressed: onAdd),
         ],
       ),
     );
   }
 
   Widget _medicineCard(MedicineModel med, VoidCallback onDelete) {
-    String subText = "Liều: ${med.dosage} - ${med.time.format()}";
+    String repeatText = med.repeatDays.isEmpty ? "Hằng ngày" : med.repeatDays.join(', ');
+    String subText = "Liều: ${med.dosage} - ${med.time.format()} ($repeatText)";
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Container(
